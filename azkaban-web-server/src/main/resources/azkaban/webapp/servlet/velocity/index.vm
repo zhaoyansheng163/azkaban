@@ -29,6 +29,7 @@
     var timezone = "${timezone}";
     var errorMessage = null;
     var successMessage = null;
+    var langType = "${currentlangType}";
   </script>
 </head>
 <body>
@@ -66,7 +67,7 @@
             ## form-group has padding.
               <div class="pull-right">
                 <button type="button" id="create-project-btn" class="btn btn-sm btn-success"><span
-                    class="glyphicon glyphicon-plus"></span> Create Project
+                    class="glyphicon glyphicon-plus"></span>$createProgram
                 </button>
               </div>
             </div>

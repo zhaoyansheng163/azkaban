@@ -88,9 +88,9 @@
           <tr>
             <th>#</th>
             <th class="execid">$execId</th>
-            <th>Flow</th>
-            <th>Project</th>
-            <th>User</th>
+            <th>$flow</th>
+            <th>$program</th>
+            <th>$user</th>
             <th class="date">$startTime</th>
             <th class="date">$endTime</th>
             <th class="elapse">$timeOfExec</th>

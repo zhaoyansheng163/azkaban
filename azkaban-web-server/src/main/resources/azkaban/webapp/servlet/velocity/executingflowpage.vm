@@ -47,6 +47,7 @@
     var flowId = "${flowid}";
     var execId = "${execid}";
     var triggerInstanceId = "${triggerInstanceId}";
+    var langType = "${currentlangType}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
@@ -69,7 +70,7 @@
         <div class="header-title">
           <h1>
             <a href="${context}/executor?execid=${execid}">
-              Flow Execution
+              $execId
               #if (${execid} == "-1" || ${execid} == "-2")
                 <small>not started <span id="flowStatus">-</span></small>
               #else
@@ -81,12 +82,12 @@
         <div class="header-control">
           <div class="exflow-stats">
             <div class="col-xs-5">
-              <p><strong>Submit User</strong> <span id="submitUser">-</span></p>
-              <p><strong>Duration</strong> <span id="duration">-</span></p>
+              <p><strong>$submitter</strong> <span id="submitUser">-</span></p>
+              <p><strong>$timeOfExec</strong> <span id="duration">-</span></p>
             </div>
             <div class="col-xs-7">
-              <p><strong>Start Time</strong> <span id="startTime">-</span></p>
-              <p><strong>End Time</strong> <span id="endTime">-</span></p>
+              <p><strong>$startTime</strong> <span id="startTime">-</span></p>
+              <p><strong>$endTime</strong> <span id="endTime">-</span></p>
             </div>
           </div>
           <div class="clearfix"></div>
@@ -220,13 +221,15 @@
           <thead>
           <tr>
             <th>Name</th>
-            <th class="jobtype">Type</th>
-            <th class="timeline">Timeline</th>
-            <th class="date">Start Time</th>
-            <th class="date">End Time</th>
-            <th class="elapse">Elapsed</th>
-            <th class="status">Status</th>
-            <th class="logs">Details</th>
+            <th class="jobtype">$jobType</th>
+            <th class="timeline">$timeLine</th>
+            <th class="date">$startTime</th>
+            <th class="date">$endTime</th>
+            <th class="elapse">$timeOfExec</th>
+            <th class="status">$status</th>
+            <th class="logs">$detail</th>
+            <th class="col-xs-1">$operate</th>
+            <th class="date">$runBatchDate</th>
           </tr>
           </thead>
           <tbody id="executableBody">

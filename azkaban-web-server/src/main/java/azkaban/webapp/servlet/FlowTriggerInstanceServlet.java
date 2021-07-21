@@ -36,6 +36,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -73,7 +75,9 @@ public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
 
     page.add("runningTriggers", this.triggerService.getRunningTriggers());
     page.add("recentTriggers", this.triggerService.getRecentlyFinished());
+    String languageType = LoadJsonUtils.getLanguageType();
 
+    page.add("currentlangType", languageType);
     page.add("vmutils", new ExecutorVMHelper());
     page.render();
   }
