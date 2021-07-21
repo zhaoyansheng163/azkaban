@@ -35,9 +35,9 @@ public enum Date {
   RUN_LAST_QUARTER_END_STD("run_last_quarter_end_std", "quarter", "yyyy-MM-dd"),
   RUN_LAST_YEAR_END_STD("run_last_year_end_std", "year", "yyyy-MM-dd");
 
-  private String value;
-  private String calRule;
-  private String format;
+  private final String value;
+  private final String calRule;
+  private final String format;
 
   private static Map<String, Date> DATE_MAP = Arrays.stream(Date.values()).collect(Collectors.toMap(x -> x.getValue(), x -> x));
 
