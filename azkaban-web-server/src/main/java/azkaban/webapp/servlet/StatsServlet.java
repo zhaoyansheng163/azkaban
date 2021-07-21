@@ -36,6 +36,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -202,7 +204,8 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       logger.error(e.getMessage(), e);
       page.add("errorMsg", "Failed to get a response from Azkaban exec server");
     }
-
+    String languageType = LoadJsonUtils.getLanguageType();
+    page.add("currentlangType", languageType);
     page.render();
   }
 

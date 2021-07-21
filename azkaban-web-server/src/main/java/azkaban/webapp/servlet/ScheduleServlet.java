@@ -49,6 +49,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -396,6 +398,41 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (final ScheduleManagerException e) {
       throw new ServletException(e);
     }
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> scheduledflowpageMap;
+    Map<String, String> subPageMap1;
+    Map<String, String> subPageMap2;
+    Map<String, String> subPageMap3;
+    Map<String, String> subPageMap4;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      scheduledflowpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.scheduledflowpage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.slapanel.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.schedule-flow-edit-panel.vm");
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.messagedialog.vm");
+    }else {
+      scheduledflowpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.scheduledflowpage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.slapanel.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.schedule-flow-edit-panel.vm");
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.messagedialog.vm");
+    }
+    scheduledflowpageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+    subPageMap2.forEach(page::add);
+    subPageMap3.forEach(page::add);
+    subPageMap4.forEach(page::add);
+
     page.add("schedules", schedules);
     page.render();
   }

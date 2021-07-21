@@ -30,6 +30,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
@@ -85,6 +87,8 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
     final List<Trigger> triggers = this.triggerManager.getTriggers();
     page.add("triggers", triggers);
+    String languageType = LoadJsonUtils.getLanguageType();
+    page.add("currentlangType", languageType);
     page.render();
   }
 

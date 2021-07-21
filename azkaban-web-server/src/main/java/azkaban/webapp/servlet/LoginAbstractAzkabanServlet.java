@@ -261,7 +261,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
     loginMap.forEach(page::add);
     subPageMap1.forEach(page::add);
-    
+
     page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
       page.add("errorMsg", errorMsg);
