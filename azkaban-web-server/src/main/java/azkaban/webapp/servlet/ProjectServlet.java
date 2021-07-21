@@ -29,10 +29,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -149,6 +152,34 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
+   * 读取 index.vm 及其子页面的国际化资源数据
+   * @return
+   */
+  private Map<String, Map<String, String>> loadIndexpageI18nData() {
+
+    Map<String, Map<String, String>> dataMap = new HashMap<>();
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> indexMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      indexMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.index.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }else {
+      indexMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.index.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }
+
+    dataMap.put("index.vm", indexMap);
+    dataMap.put("nav.vm", subPageMap1);
+    return dataMap;
+  }
+
+  /**
    * Renders the user homepage that users see when they log in
    */
   private void handlePageRender(final HttpServletRequest req,
@@ -157,6 +188,11 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+
+    // FIXME Load international resources.
+    Map<String, Map<String, String>> vmDataMap = loadIndexpageI18nData();
+    vmDataMap.forEach((vm, data) -> data.forEach(page::add));
+    page.add("userGroups", user.getGroups());
 
     if (this.lockdownCreateProjects &&
         !UserUtils.hasPermissionforAction(this.userManager, user, Permission.Type.CREATEPROJECTS)) {
@@ -176,6 +212,9 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       page.add("viewProjects", "personal");
       page.add("projects", projects);
     }
+    String languageType = LoadJsonUtils.getLanguageType();
+
+    page.add("currentlangType", languageType);
 
     page.render();
   }

@@ -56,8 +56,8 @@
 ## Page Content
 
   <ul class="nav nav-tabs nav-sm" id="header-tabs">
-    <li id="currently-running-view-link"><a href="#currently-running">Currently Running</a></li>
-    <li id="recently-finished-view-link"><a href="#recently-finished">Recently Finished</a></li>
+    <li id="currently-running-view-link"><a href="#currently-running">$currentRunning</a></li>
+    <li id="recently-finished-view-link"><a href="#recently-finished">$recentFinish</a></li>
   </ul>
 
   <div class="row" id="currently-running-view">
@@ -138,7 +138,6 @@
 
   <div class="row" id="recently-finished-view">
     <div class="col-xs-12">
-      <i>* Click column headers to sort.</i>
       <table id="recentlyFinished"
              class="table table-striped table-bordered table-hover table-condensed executions-table">
         <thead>
@@ -188,7 +187,7 @@
             #end
           #else
           <tr>
-            <td colspan="10">No Recently Finished</td>
+            <td colspan="10">$recentNoData</td>
           </tr>
           #end
         </tbody>
