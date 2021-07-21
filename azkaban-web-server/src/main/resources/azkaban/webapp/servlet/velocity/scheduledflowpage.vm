@@ -56,7 +56,7 @@
 
   <div class="az-page-header">
     <div class="container-full">
-      <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
+      <h1><a href="${context}/schedule">$schFlowList</a></h1>
     </div>
   </div>
 
@@ -76,16 +76,16 @@
             <!--th class="execid">Execution Id</th-->
             <th>#</th>
             <th>ID</th>
-            <th>Flow</th>
-            <th>Project</th>
-            <th>Submitted By</th>
-            <th class="date">First Scheduled to Run</th>
-            <th class="date">Next Execution Time</th>
+            <th>$flow</th>
+            <th>$program</th>
+            <th>$submitter</th>
+            <th class="date">$updateSchTime</th>
+            <th class="date">$nextExecTime</th>
             <th class="date">Repeats Every</th>
-            <th class="date">Cron Expression</th>
+            <th class="date">$cronExpre</th>
             <th>Execution Options</th>
             <th>Has SLA</th>
-            <th colspan="2" class="action ignoresort">Action</th>
+            <th colspan="4" class="action ignoresort">$operate</th>
           </tr>
           </thead>
           <tbody>
