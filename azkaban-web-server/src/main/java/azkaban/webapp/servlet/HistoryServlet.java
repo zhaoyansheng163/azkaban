@@ -183,6 +183,8 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
         pageStartValue == pageNum));
     pageStartValue++;
 
+    page.add("flowExecHistory", "Histest");
+
     page.render();
   }
 
