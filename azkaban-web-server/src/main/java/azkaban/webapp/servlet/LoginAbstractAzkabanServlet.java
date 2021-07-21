@@ -41,6 +41,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -239,6 +241,27 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private void handleLogin(final HttpServletRequest req, final HttpServletResponse resp,
       final String errorMsg) {
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
+
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> loginMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.login.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      this.passwordPlaceholder = "密码";
+    }else {
+      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.login.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      this.passwordPlaceholder = "Password";
+    }
+    loginMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+    
     page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
       page.add("errorMsg", errorMsg);

@@ -28,6 +28,7 @@
     var contextURL = "${context}";
     var currentTime = ${currentTime};
     var timezone = "${timezone}";
+    var langType = "${currentlangType}";
 
     function refreshMetricList() {
       var requestURL = '/stats';
