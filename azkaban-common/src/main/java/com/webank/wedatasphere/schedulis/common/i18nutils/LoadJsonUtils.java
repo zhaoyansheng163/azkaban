@@ -62,7 +62,7 @@ public class LoadJsonUtils {
 
     public static String readFromTextFile(String fileName) throws IOException {
         InputStream resourceAsStream = LoadJsonUtils.class.getResourceAsStream(fileName);
-        InputStreamReader reader = new InputStreamReader(resourceAsStream);
+        InputStreamReader reader = new InputStreamReader(resourceAsStream, "UTF-8");
         BufferedReader br = new BufferedReader(reader);
         StringBuilder builder = new StringBuilder();
         String line;
