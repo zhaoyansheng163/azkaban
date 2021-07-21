@@ -25,10 +25,13 @@ import azkaban.webapp.AzkabanWebServer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
@@ -89,6 +92,24 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     int pageNum = getIntParam(req, "page", 1);
     final int pageSize = getIntParam(req, "size", getDisplayExecutionPageSize());
     page.add("vmutils", new VelocityUtil(this.projectManager));
+
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> historypageMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      historypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.historypage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }else {
+      historypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.historypage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }
+    historypageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
 
     if (pageNum < 0) {
       pageNum = 1;
