@@ -27,15 +27,22 @@
 项目地址：
 github：
 https://github.com/zhaoyansheng163/azkaban
+
 最新文档版本的汉化版本（3.90.0）
 https://github.com/zhaoyansheng163/azkaban/tree/release3.90.0
 
 
 gitee：
 https://gitee.com/zhaoyansheng/azkaban
+
 最新文档版本的汉化版本（3.90.0）
 https://gitee.com/zhaoyansheng/azkaban/tree/release3.90.0/
 
 
 参考了如下项目：
 https://gitee.com/WeBank/Schedulis
+
+关键词：
+azkaban 汉化
+azkaban 中文
+azkaban 汉语
