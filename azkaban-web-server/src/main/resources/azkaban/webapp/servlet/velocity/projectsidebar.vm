@@ -27,14 +27,14 @@
     </div>
   </div>
   <hr>
-  <p><strong>Created on</strong> $TimeUtils.formatDateTime($project.createTimestamp)</p>
+  <p><strong>$createTime</strong> $TimeUtils.formatDateTime($project.createTimestamp)</p>
   <p>
-    <strong>Last modified on</strong> $TimeUtils.formatDateTime($project.lastModifiedTimestamp)
+    <strong>$lastModifyTime</strong> $TimeUtils.formatDateTime($project.lastModifiedTimestamp)
   </p>
-  <p><strong>Modified by</strong> $project.lastModifiedUser</p>
+  <p><strong>$proCreator</strong> $project.lastModifiedUser</p>
 
   <hr>
 
-  <p><strong>Project admins:</strong> $admins</p>
-  <p><strong>Your Permissions:</strong> $userpermission.toString()</p>
+  <p><strong>$programManager</strong> $admins</p>
+  <p><strong>$yourPer</strong> $userpermission.toString()</p>
 </div>

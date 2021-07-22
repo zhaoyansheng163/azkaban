@@ -805,6 +805,14 @@
     "scheduledFlowTriggers": "定时工作流触发器",
     "flow": "工作流 ",
     "project": "项目 ",
-    "flowTriggers": "工作流触发器 "
+    "flowTriggersTag": "工作流触发器 ",
+    "submittedBy": "提交者 ",
+    "firstScheduletoRun": "首次调度时间 ",
+    "nextExecutionTime": "下次执行时间 ",
+    "scheduleTag": "cron表达式 ",
+    "maxWaitMins": "最大等待分钟数 ",
+    "dependenciesTag": "依赖 ",
+    "isPaused": "是否暂停 ",
+    "pauseResume": "启动/停止 "
   }
 }

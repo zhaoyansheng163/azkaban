@@ -805,6 +805,14 @@
     "scheduledFlowTriggers": "Scheduled Flow Triggers",
     "flow": "Flow ",
     "project": "Project ",
-    "flowTriggers": "Flow Triggers "
+    "flowTriggersTag": "Flow Triggers ",
+    "submittedBy": "Submitted by ",
+    "firstScheduletoRun": "First Schedule to Run ",
+    "nextExecutionTime": "Next Execution Time ",
+    "scheduleTag": "Schedule ",
+    "maxWaitMins": "Max Wait Mins ",
+    "dependenciesTag": "Dependencies ",
+    "isPaused": "Is Paused ",
+    "pauseResume": "Pause/Resume "
   }
 }
