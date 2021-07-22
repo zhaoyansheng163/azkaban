@@ -426,6 +426,7 @@
     "sch": "Schedule",
     "running": "Running",
     "exechistoryTag": "Executed",
+    "flowtriggerTag": "Scheduled Flow Triggers",
     "singalTag": "Signal",
     "userTag": "Param",
     "systemTag": "System",
@@ -799,5 +800,11 @@
     "slaSetting": "Set SLA",
     "deleteSch": "Delete Schedule",
     "showParam": "Show Param"
+  },
+  "azkaban.webapp.servlet.velocity.flowtriggerspage.vm": {
+    "scheduledFlowTriggers": "Scheduled Flow Triggers",
+    "flow": "Flow ",
+    "project": "Project ",
+    "flowTriggers": "Flow Triggers "
   }
 }

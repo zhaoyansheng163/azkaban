@@ -31,7 +31,7 @@
     var contextURL = "${context}";
     var currentTime = ${currentTime};
     var timezone = "${timezone}";
-
+    var langType = "${currentlangType}";
     $(document).ready(function () {
       var jobTable = $("#executingJobs");
       jobTable.tablesorter();

@@ -110,6 +110,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
     }
     historypageMap.forEach(page::add);
     subPageMap1.forEach(page::add);
+    page.add("currentlangType", languageType);
 
     if (pageNum < 0) {
       pageNum = 1;

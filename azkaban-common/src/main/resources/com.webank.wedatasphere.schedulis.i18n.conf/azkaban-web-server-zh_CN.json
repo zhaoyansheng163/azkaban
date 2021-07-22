@@ -425,6 +425,7 @@
     "sch": "定时调度",
     "running": "正在运行",
     "exechistoryTag": "执行历史",
+    "flowtriggerTag": "定时触发器",
     "loginout": "登出",
     "help": "帮助",
     "exchangeLang": "中英文切换",
@@ -799,5 +800,11 @@
     "slaSetting": "设置告警",
     "deleteSch": "删除调度",
     "showParam": "显示参数"
+  },
+  "azkaban.webapp.servlet.velocity.flowtriggerspage.vm": {
+    "scheduledFlowTriggers": "定时工作流触发器",
+    "flow": "工作流 ",
+    "project": "项目 ",
+    "flowTriggers": "工作流触发器 "
   }
 }
