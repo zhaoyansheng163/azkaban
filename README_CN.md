@@ -6,4 +6,6 @@
 这是版本 3.90.0的多语言版本（中文、英文），或者说是汉化版本
 
 以下是图片，编译相关问题参考 README.md
+项目：
+[docs/zh_cn/project.png](docs/zh_cn/project.png)
 
