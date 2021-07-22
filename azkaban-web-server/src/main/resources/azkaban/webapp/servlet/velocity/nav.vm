@@ -151,7 +151,7 @@
 
           <li#if($current_page == 'doc') class="active"#end
                                          onClick="navMenuClick('https://azkaban.readthedocs.io/en/latest/')">
-            <a href="https://azkaban.readthedocs.io/en/latest/">Documentation</a></li>
+            <a href="https://azkaban.readthedocs.io/en/latest/">$documentationTag</a></li>
         </ul>
 
         <ul class="nav navbar-nav navbar-right">
@@ -159,7 +159,7 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">${user_id} <b
                 class="caret"></b></a>
             <ul class="dropdown-menu">
-              <li><a href="$!context?logout">Logout</a></li>
+              <li><a href="$!context?logout">$loginout</a></li>
             </ul>
           </li>
         </ul>

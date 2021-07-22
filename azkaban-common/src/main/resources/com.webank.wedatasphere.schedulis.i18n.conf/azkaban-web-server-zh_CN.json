@@ -426,6 +426,7 @@
     "running": "正在运行",
     "exechistoryTag": "执行历史",
     "flowtriggerTag": "定时触发器",
+    "documentationTag": "文档",
     "loginout": "登出",
     "help": "帮助",
     "exchangeLang": "中英文切换",

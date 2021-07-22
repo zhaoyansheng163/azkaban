@@ -427,6 +427,7 @@
     "running": "Running",
     "exechistoryTag": "Executed",
     "flowtriggerTag": "Scheduled Flow Triggers",
+    "documentationTag": "Documentation",
     "singalTag": "Signal",
     "userTag": "Param",
     "systemTag": "System",
