@@ -9,20 +9,20 @@
 
 以下是图片，编译相关问题参考 README.md
 
-项目：
-[docs/zh_cn/project.png](docs/zh_cn/project.png)
+项目： [docs/zh_cn/project.png](docs/zh_cn/project.png)
+![Alt](docs/zh_cn/project.png)
 
-运行中：
-[docs/zh_cn/running.png](docs/zh_cn/running.png)
+运行中：[docs/zh_cn/running.png](docs/zh_cn/running.png)
+![Alt](docs/zh_cn/running.png)
 
-定时调度：
-[docs/zh_cn/schedule.png](docs/zh_cn/schedule.png)
+定时调度：[docs/zh_cn/schedule.png](docs/zh_cn/schedule.png)
+![Alt](docs/zh_cn/schedule.png)
 
-执行历史：
-[docs/zh_cn/history.png](docs/zh_cn/history.png)
+执行历史：[docs/zh_cn/history.png](docs/zh_cn/history.png)
+![Alt](docs/zh_cn/history.png)
 
-工作流触发器：
-[docs/zh_cn/flowtrigger.png](docs/zh_cn/flowtrigger.png)
+工作流触发器：[docs/zh_cn/flowtrigger.png](docs/zh_cn/flowtrigger.png)
+![Alt](docs/zh_cn/flowtrigger.png)
 
 项目地址：
 github：
