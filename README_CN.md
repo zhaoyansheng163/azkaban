@@ -4,6 +4,8 @@
 
 # 说明
 这是版本 3.90.0的多语言版本（中文、英文），或者说是汉化版本
+初衷：国内普遍不太习惯英文版本，但是官方并没有做多语言支持，为便于大家使用，整理了这个版本（参考了Schedulis）
+大家一起在这个基础上不断完善，为大家提供一个用着习惯的版本。
 
 以下是图片，编译相关问题参考 README.md
 
@@ -33,3 +35,7 @@ gitee：
 https://gitee.com/zhaoyansheng/azkaban
 最新文档版本的汉化版本（3.90.0）
 https://gitee.com/zhaoyansheng/azkaban/tree/release3.90.0/
+
+
+参考了如下项目：
+https://gitee.com/WeBank/Schedulis
