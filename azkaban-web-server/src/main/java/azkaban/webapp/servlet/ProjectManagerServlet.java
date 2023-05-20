@@ -18,66 +18,24 @@ package azkaban.webapp.servlet;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableJobInfo;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
+import azkaban.executor.*;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.project.Project;
-import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLogEvent;
+import azkaban.project.*;
 import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
-import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.session.Session;
-import azkaban.user.Permission;
+import azkaban.user.*;
 import azkaban.user.Permission.Type;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
+import azkaban.utils.*;
 import azkaban.webapp.AzkabanWebServer;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
@@ -88,6 +46,17 @@ import org.apache.commons.lang.StringUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.security.AccessControlException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
@@ -1731,15 +1700,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/flowpage.vm");
+    // 加载国际化资源
+    Map<String, Map<String, String>> vmDataMap = loadFlowpageI18nData();
+    vmDataMap.forEach((vm, data) -> data.forEach(page::add));
     final String projectName = getParam(req, "project");
     final String flowName = getParam(req, "flow");
 
     final User user = session.getUser();
     Project project = null;
     Flow flow = null;
-    // 加载国际化资源
-    Map<String, Map<String, String>> vmDataMap = loadFlowpageI18nData();
-    vmDataMap.forEach((vm, data) -> data.forEach(page::add));
     try {
       project = this.projectManager.getProject(projectName);
 
@@ -1774,7 +1743,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } catch (final AccessControlException e) {
       page.add("errorMsg", e.getMessage());
     }
+    String languageType = LoadJsonUtils.getLanguageType();
 
+    page.add("currentlangType", languageType);
     page.render();
   }
 

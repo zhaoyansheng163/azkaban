@@ -110,9 +110,9 @@
     <div class="container-full">
       <ol class="breadcrumb">
         <li><a
-            href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name
+            href="${context}/manager?project=${project.name}"><strong>$program</strong> $project.name
         </a></li>
-        <li class="active"><strong>Flow</strong> $flowid</li>
+        <li class="active"><strong>$flow</strong> $flowid</li>
       </ol>
     </div>
   </div>
@@ -124,10 +124,10 @@
   ## Tabs
 
     <ul class="nav nav-tabs nav-sm" id="headertabs">
-      <li id="graphViewLink"><a href="#graph">Graph</a></li>
-      <li id="executionsViewLink"><a href="#executions">Executions</a></li>
-      <li id="flowtriggersViewLink"><a href="#flowtriggers">Flow Triggers</a></li>
-      <li id="summaryViewLink"><a href="#summary">Summary</a></li>
+      <li id="graphViewLink"><a href="#graph">$graph</a></li>
+      <li id="executionsViewLink"><a href="#executions">$exechistory</a></li>
+      <li id="flowtriggersViewLink"><a href="#flowtriggers">工作流调度</a></li>
+      <li id="summaryViewLink"><a href="#summary">$desc</a></li>
     </ul>
   </div>
 
@@ -147,13 +147,14 @@
                id="execTable">
           <thead>
           <tr>
-            <th>Execution Id</th>
-            <th>User</th>
-            <th class="date">Start Time</th>
-            <th class="date">End Time</th>
-            <th class="elapse">Elapsed</th>
-            <th class="status">Status</th>
-            <th class="action">Action</th>
+            <th>$execId</th>
+            <th>$user</th>
+            <th class="date">$startTime</th>
+            <th class="date">$endTime</th>
+            <th class="date">$runBatchDate</th>
+            <th class="elapse">$timeOfExec</th>
+            <th class="status">$status</th>
+            <th class="action">$operate</th>
           </tr>
           </thead>
           <tbody id="execTableBody">
@@ -201,11 +202,10 @@
       <div class="row">
         <div class="col-xs-12">
           <div class="callout callout-info">
-            <h4>Analyze last run</h4>
-            <p>Analyze the last run for aggregate performance statistics.
-              Note: this may take a few minutes, especially if your flow is large.</p>
+            <h4>$lastRunAns</h4>
+            <p>$tipsLastRunAns</p>
             <p>
-              <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
+              <button type="button" id="analyze-btn" class="btn btn-primary">$anysis</button>
             </p>
           </div>
         </div>
