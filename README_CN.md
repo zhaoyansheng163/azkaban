@@ -39,6 +39,26 @@ https://gitee.com/zhaoyansheng/azkaban
 https://gitee.com/zhaoyansheng/azkaban/tree/release3.90.0/
 
 
+
+如何打包汉化版本：
+
+git clone https://gitee.com/zhaoyansheng/azkaban.git
+
+git checkout   release3.90.0
+
+./gradlew build -x test
+
+
+
+其他操作步骤参考英文版的文档即可。其实差异就是切换到 汉化分支：release3.90.0
+
+
+
+
+
+
+
+
 参考了如下项目：
 https://gitee.com/WeBank/Schedulis
 
