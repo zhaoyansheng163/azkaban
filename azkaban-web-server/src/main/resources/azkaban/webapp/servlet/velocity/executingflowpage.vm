@@ -99,10 +99,10 @@
     <div class="container-full">
       <ol class="breadcrumb">
         <li><a
-            href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName
+            href="${context}/manager?project=${projectName}"><strong>$program</strong> $projectName
         </a></li>
         <li><a
-            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong>
+            href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>$flowid</strong>
           $flowid
         </a></li>
         <li class="active"><strong>$execid</strong> $execid</li>
@@ -117,11 +117,12 @@
   ## Tabs and buttons.
 
     <ul class="nav nav-tabs nav-sm" id="headertabs">
-      <li id="graphViewLink"><a href="#graph">Graph</a></li>
+      <li id="graphViewLink"><a href="#graph">$view</a></li>
       <li id="flowTriggerlistViewLink"><a href="#triggerslist">Flow Trigger List</a></li>
       <li id="jobslistViewLink"><a href="#jobslist">$jobList</a></li>
       <li id="flowLogViewLink"><a href="#log">$flowLog</a></li>
-      <li id="statsViewLink"><a href="#stats">Stats</a></li>
+      <li id="operationParameterLink"><a href="#operationParameter">$operationParameter</a></li>
+      ##      <li id="statsViewLink"><a href="#stats">状态</a></li>
       #if ($executionExternalLinkURL)
         <li><a id="analyzerButton" href="${executionExternalLinkURL}" class="btn btn-info btn-sm"
                type="button" target="_blank"
@@ -287,7 +288,7 @@
             <p id="messageBox"></p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">$quit</button>
           </div>
         </div>
       </div>

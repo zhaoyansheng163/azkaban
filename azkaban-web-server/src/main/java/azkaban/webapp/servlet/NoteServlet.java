@@ -28,6 +28,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.log4j.Logger;
 
 public class NoteServlet extends LoginAbstractAzkabanServlet {
@@ -69,7 +71,9 @@ public class NoteServlet extends LoginAbstractAzkabanServlet {
 
     final Page page = newPage(req, resp, session,
         "azkaban/webapp/servlet/velocity/notepage.vm");
+    String languageType = LoadJsonUtils.getLanguageType();
 
+    page.add("currentlangType", languageType);
     page.add("note_type", type);
     page.add("note_message", message);
     page.add("note_url", url);

@@ -66,15 +66,15 @@
             <div class="pull-right" id="project-options">
               <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
             </div>
-            Audit Logs
+            $logStatistics
           </div>
           <table class="table table-striped" id="logTable">
             <thead>
             <tr>
-              <th>Time</th>
-              <th>User</th>
-              <th>Type</th>
-              <th>Message</th>
+              <th>$operaTime</th>
+              <th>$operaUser</th>
+              <th>$operaType</th>
+              <th>$operaInfo</th>
             </tr>
             </thead>
             <tbody>
