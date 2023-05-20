@@ -1214,6 +1214,52 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/projectlogpage.vm");
+    Map<String, String> projectlogpageMap;
+    Map<String, String> subPageMap1;
+    Map<String, String> subPageMap2;
+    Map<String, String> subPageMap3;
+    Map<String, String> subPageMap4;
+    Map<String, String> subPageMap5;
+
+    String languageType = LoadJsonUtils.getLanguageType();
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+
+      // 添加国际化标签
+      projectlogpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.projectlogpage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.projectpageheader.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.projectnav.vm");
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.projectsidebar.vm");
+      subPageMap5 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.projectmodals.vm");
+    } else {
+      // 添加国际化标签
+      projectlogpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.projectlogpage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.projectpageheader.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.projectnav.vm");
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.projectsidebar.vm");
+      subPageMap5 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.projectmodals.vm");
+    }
+
+    projectlogpageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+    subPageMap2.forEach(page::add);
+    subPageMap3.forEach(page::add);
+    subPageMap4.forEach(page::add);
+    subPageMap5.forEach(page::add);
+    page.add("currentlangType", languageType);
     final String projectName = getParam(req, "project");
 
     final User user = session.getUser();
