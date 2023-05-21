@@ -7,6 +7,11 @@
 初衷：国内普遍不太习惯英文版本，但是官方并没有做多语言支持，为便于大家使用，整理了这个版本（参考了Schedulis）
 大家一起在这个基础上不断完善，为大家提供一个用着习惯的版本。
 
+最新安装包（目前已完成大部分页面 支持 中文及英文切换，也可以自己打包）下载地址：
+
+链接：https://pan.baidu.com/s/1myKbtBxAgTIbxVcDR-3HdA
+提取码：o95n
+
 以下是图片，编译相关问题参考 README.md
 
 项目： [docs/zh_cn/project.png](docs/zh_cn/project.png)
