@@ -15,37 +15,28 @@
  */
 package azkaban.webapp.servlet;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-
 import azkaban.project.Project;
 import azkaban.server.session.Session;
-import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserManagerException;
+import azkaban.user.*;
 import azkaban.utils.StringUtils;
 import azkaban.webapp.WebMetrics;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 
 /**
@@ -112,6 +103,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
       return;
     }
+    if (hasParam(req, "ajax")) {
+      String queryString = req.getQueryString();
+      if (queryString != null && queryString.contains("exchangeLanguage")) {
+         doChangeLangue(req,resp);
+      }
+    }
 
     if (session != null) {
       if (logger.isDebugEnabled()) {
@@ -131,6 +128,41 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         handleLogin(req, resp);
       }
     }
+  }
+
+  private void doChangeLangue(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    try {
+      String languageType = (String) req.getSession().getAttribute("TRANS_I18N_LOCALE");
+      if (languageType == null || languageType.isEmpty()) {
+        languageType = req.getHeader("Accept-Language");
+        String type = languageType.split(",")[0];
+        if (type.equalsIgnoreCase("zh-CN") || type.equalsIgnoreCase("zh")) {
+          languageType = "zh_CN";
+        } else {
+          languageType = "en_US";
+        }
+      } else {
+        if ("zh_CN".equals(languageType)) {
+          languageType = "en_US";
+        }else {
+          languageType = "zh_CN";
+        }
+      }
+      req.getSession().setAttribute("TRANS_I18N_LOCALE", languageType);
+      LoadJsonUtils.setLanguageType(languageType);
+
+      if (logger.isDebugEnabled()) {
+        logger.debug("system languageType is {} " + languageType);
+      }
+    } catch (Exception e) {
+      logger.error("a fatal error had happen when init locale languageType, caused by:" + e);
+      LoadJsonUtils.setLanguageType("zh_CN");
+    }
+    doRefeash(resp);
+  }
+
+  private void doRefeash(HttpServletResponse resp) throws IOException {
+    logger.info("should refresh page");
   }
 
   /**

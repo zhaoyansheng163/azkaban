@@ -45,7 +45,18 @@
   function navMenuClick(url) {
     window.location.href = url;
   }
-
+  function setLanguage(){
+    var requestURL = contextURL + "/manager?ajax=exchangeLanguage";
+    $.ajax({
+      url: requestURL,
+      type: "get",
+      async: false,
+      dataType: "json",
+      success: function(data){
+        window.location.reload();
+      }
+    });
+  }
   function dismissBanner() {
     var dismissBanner = localStorage.getItem("dismissBanner");
     if (dismissBanner != "true") {
@@ -160,6 +171,7 @@
                 class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="$!context?logout">$loginout</a></li>
+              <li><a href="#" id="setLanguageType"  onClick="setLanguage()">$exchangeLang</a></li>
             </ul>
           </li>
         </ul>
