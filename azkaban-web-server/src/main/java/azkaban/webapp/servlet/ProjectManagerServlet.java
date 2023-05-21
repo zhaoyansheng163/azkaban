@@ -1276,7 +1276,25 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> jobhistorypageMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      jobhistorypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.jobhistorypage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    } else {
+      // 添加国际化标签
+      jobhistorypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.jobhistorypage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }
 
+    jobhistorypageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
     final String jobId = getParam(req, "job");
     page.add("jobId", jobId);
 
@@ -1336,7 +1354,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", e.getMessage());
     }
-
+    page.add("currentlangType", languageType);
     page.render();
   }
 
