@@ -49,6 +49,7 @@
     var triggerInstanceId = "${triggerInstanceId}";
     var langType = "${currentlangType}";
   </script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/exflow.js?version=1.10.0"></script>
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
 </head>

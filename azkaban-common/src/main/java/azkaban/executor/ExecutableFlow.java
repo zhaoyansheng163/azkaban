@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -50,6 +51,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String AZKABANFLOWVERSION_PARAM = "azkabanFlowVersion";
   public static final String IS_LOCKED_PARAM = "isLocked";
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
+  public static final String OTHEROPTIONS_PARAM = "otherOptions";
+  public static final String JOB_OUTPUT_GLOBAL_PARAM = "jobOutputGlobalParam";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -64,7 +67,30 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private String executionPath;
   private ExecutionOptions executionOptions;
   private double azkabanFlowVersion;
+
+  public Map<String, Object> getOtherOption() {
+    return otherOption;
+  }
+
+  public void setOtherOption(Map<String, Object> otherOption) {
+    this.otherOption = otherOption;
+  }
+
+  //其他设置参数，方便后续扩展使用
+  private Map<String, Object> otherOption = new HashMap<>();
+   //记录job输出的全局变量
+  private ConcurrentHashMap<String, String> jobOutputGlobalParam = new ConcurrentHashMap<>();
+
   private boolean isLocked;
+
+  public ConcurrentHashMap<String, String> getJobOutputGlobalParam() {
+    return jobOutputGlobalParam;
+  }
+
+  public void setJobOutputGlobalParam(ConcurrentHashMap<String, String> jobOutputGlobalParam) {
+    this.jobOutputGlobalParam = jobOutputGlobalParam;
+  }
+
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
 
@@ -269,7 +295,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
         slaOptions.add(slaOption.toObject());
       }
     }
-
+    final Map<String, String> jobOutputGlobalParam = this.getJobOutputGlobalParam();
+    flowObj.put(JOB_OUTPUT_GLOBAL_PARAM, jobOutputGlobalParam);
     flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
@@ -316,7 +343,16 @@ public class ExecutableFlow extends ExecutableFlowBase {
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
     }
+    //设置其他数据参数
+    if(flowObj.containsKey(OTHEROPTIONS_PARAM)){
+      final Map<String, Object> otherOptions = flowObj.getMap(OTHEROPTIONS_PARAM);
 
+      this.setOtherOption(otherOptions);
+    }
+    if(flowObj.containsKey(JOB_OUTPUT_GLOBAL_PARAM)){
+      final ConcurrentHashMap<String, String> jobOutputGlobalParam = new ConcurrentHashMap(flowObj.getMap(JOB_OUTPUT_GLOBAL_PARAM));
+      this.setJobOutputGlobalParam(jobOutputGlobalParam);
+    }
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
   }

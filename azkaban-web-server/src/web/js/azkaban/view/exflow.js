@@ -88,6 +88,7 @@ azkaban.FlowTabView = Backbone.View.extend({
     "click #flowTriggerlistViewLink": "handleFlowTriggerLinkClick",
     "click #jobslistViewLink": "handleJobslistLinkClick",
     "click #flowLogViewLink": "handleLogLinkClick",
+    "click #operationParameterLink": "handleOperationParameterLinkClick",
     "click #statsViewLink": "handleStatsLinkClick",
     "click #cancelbtn": "handleCancelClick",
     "click #executebtn": "handleRestartClick",
@@ -124,12 +125,14 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
+    $("#operationParameterLink").removeClass("active");
 
     $("#jobListView").hide();
     $("#flowTriggerListView").hide();
     $("#graphView").show();
     $("#flowLogView").hide();
     $("#statsView").hide();
+    $("#operationParameterView").hide();
   },
 
   handleFlowTriggerLinkClick: function () {
@@ -138,7 +141,8 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").addClass("active");
     $("#statsViewLink").removeClass("active");
-
+    $("#operationParameterLink").removeClass("active");
+    $("#operationParameterView").hide();
     $("#jobListView").hide();
     $("#flowTriggerListView").show();
     $("#graphView").hide();
@@ -152,7 +156,8 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#flowLogViewLink").removeClass("active");
     $("#flowTriggerlistViewLink").removeClass("active");
     $("#statsViewLink").removeClass("active");
-
+    $("#operationParameterLink").removeClass("active");
+    $("#operationParameterView").hide();
     $("#graphView").hide();
     $("#flowTriggerListView").hide();
     $("#jobListView").show();
@@ -166,12 +171,30 @@ azkaban.FlowTabView = Backbone.View.extend({
     $("#jobslistViewLink").removeClass("active");
     $("#flowLogViewLink").addClass("active");
     $("#statsViewLink").removeClass("active");
-
+    $("#operationParameterLink").removeClass("active");
+    $("#operationParameterView").hide();
     $("#graphView").hide();
     $("#flowTriggerListView").hide();
     $("#jobListView").hide();
     $("#flowLogView").show();
     $("#statsView").hide();
+  },
+  handleOperationParameterLinkClick: function () {
+    $("#graphViewLink").removeClass("active");
+    $("#flowTriggerlistViewLink").removeClass("active");
+    $("#jobslistViewLink").removeClass("active");
+    $("#flowLogViewLink").removeClass("active");
+    $("#statsViewLink").removeClass("active");
+    $("#operationParameterLink").addClass("active");
+    $("#graphView").hide();
+    $("#flowTriggerListView").hide();
+    $("#jobListView").hide();
+    $("#flowLogView").hide();
+    $("#statsView").hide();
+    $("#operationParameterView").show();
+    if (operationParameterView) {
+      operationParameterView.getOperationParameter();
+    }
   },
 
   handleStatsLinkClick: function () {
@@ -373,6 +396,63 @@ azkaban.FlowLogView = Backbone.View.extend({
       }
     });
   }
+});
+var operationParameterView;
+azkaban.OperationParameterView = Backbone.View.extend({
+  events: {
+  },
+  initialize: function (settings) {
+    this.getOperationParameter();
+  },
+  getOperationParameter: function () {
+    console.log("operation parameter view.");
+    var requestURL = contextURL + "/executor";
+    $.ajax({
+      async: false,
+      url: requestURL,
+      data: {
+        "execid": execId,
+        "ajax": "getOperationParameters",
+      },
+      success: function (data) {
+        console.log("getOperationParameters success.");
+        if (data.error) {
+          console.log(data.error);
+        } else {
+          var tbody = $("#param-tbody");
+          tbody.empty();
+          var flowParams = data.flowParams;
+          for (var i in flowParams) {
+            var row = document.createElement("tr");
+            //组装执行参数名行
+            var tdName = document.createElement("td");
+            $(tdName).text(i);
+            row.appendChild(tdName);
+            //组装参数值行
+            var tdValue = document.createElement("td");
+            $(tdValue).text(flowParams[i]);
+            row.appendChild(tdValue);
+            tbody.append(row);
+          }
+          var outputParamTbody = $("#job-output-param-tbody");
+          outputParamTbody.empty();
+          var jobOutputGlobalParams = data.jobOutputGlobalParams;
+          for (var i in jobOutputGlobalParams) {
+            var row = document.createElement("tr");
+            //组装执行参数名行
+            var tdName = document.createElement("td");
+            $(tdName).text(i);
+            row.appendChild(tdName);
+            //组装参数值行
+            var tdValue = document.createElement("td");
+            $(tdValue).text(jobOutputGlobalParams[i]);
+            row.appendChild(tdValue);
+            outputParamTbody.append(row);
+          }
+        }
+      }
+    });
+  },
 });
 
 var statsView;
@@ -582,6 +662,9 @@ $(function () {
   flowLogView = new azkaban.FlowLogView({
     el: $('#flowLogView'),
     model: logModel
+  });
+  operationParameterView = new azkaban.OperationParameterView({
+    el: $('#operationParameterView'),
   });
 
   statusView = new azkaban.StatusView({

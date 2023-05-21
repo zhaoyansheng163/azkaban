@@ -42,6 +42,8 @@ import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
+import com.webank.wedatasphere.schedulis.common.utils.LogErrorCodeFilterUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,6 +135,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
         } else if (ajaxName.equals("fetchExecJobLogs")) {
           ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+        } else if (ajaxName.equals("getOperationParameters")) {
+          ajaxGetOperationParameters(req, resp, ret, session.getUser(), exFlow);
         } else if (ajaxName.equals("fetchExecJobStats")) {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
         } else if (ajaxName.equals("retryFailedJobs")) {
@@ -716,6 +720,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
+  }
+
+  /**
+   * 获取作业流运行参数
+   * @throws ServletException
+   */
+  private void ajaxGetOperationParameters(final HttpServletRequest req, final HttpServletResponse resp,
+                                          final HashMap<String, Object> ret, final User user,
+                                          final ExecutableFlow exFlow) throws ServletException {
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    if (project == null) {
+      return;
+    }
+    ret.put("flowParams", exFlow.getExecutionOptions().getFlowParameters());
+    ret.put("jobOutputGlobalParams", exFlow.getJobOutputGlobalParam());
   }
 
   private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
