@@ -24,6 +24,9 @@
 工作流触发器：[docs/zh_cn/flowtrigger.png](docs/zh_cn/flowtrigger.png)
 ![Alt](docs/zh_cn/flowtrigger.png)
 
+显示工作流执行参数：[docs/zh_cn/exec-para.png](docs/zh_cn/exec-para.png)
+![Alt](docs/zh_cn/exec-para.png)
+
 项目地址：
 github：
 https://github.com/zhaoyansheng163/azkaban
