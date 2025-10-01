@@ -33,11 +33,11 @@
         <table class="table table-striped" id="flowRulesTbl">
           <thead>
           <tr>
-            <th>Flow/Job</th>
-            <th>Sla Rule</th>
-            <th>Duration(In HH:MM eg. kill in 10 minutes is 00:10)</th>
-            <th>Email Action</th>
-            <th>Kill Action</th>
+            <th>$floworJob</th>
+            <th>$ruleAlert</th>
+            <th>$timeout(In HH:MM eg. kill in 10 minutes is 00:10)</th>
+            <th>$sendemail</th>
+            <th>$stopJoborFlow</th>
           </tr>
           </thead>
           <tbody>

@@ -29,7 +29,7 @@
     var timezone = "${timezone}";
     var errorMessage = null;
     var successMessage = null;
-
+    var langType = "${currentlangType}";
     $(document).ready(function () {
       var jobTable = $("#scheduleFlowTriggers");
       jobTable.tablesorter();
@@ -75,7 +75,7 @@
 
 <div class="az-page-header">
   <div class="container-full">
-    <h1><a href="${context}/flowtrigger">Scheduled Flow Triggers</a></h1>
+    <h1><a href="${context}/flowtrigger">$scheduledFlowTriggers</a></h1>
   </div>
 </div>
 
@@ -86,7 +86,7 @@
 ## Page Content
 
   <ul class="nav nav-tabs nav-sm" id="header-tabs">
-    <li id="currently-running-view-link"><a href="#currently-running">Flow Triggers</a></li>
+    <li id="currently-running-view-link"><a href="#currently-running">$flowTriggersTag </a></li>
   </ul>
 
   <div class="row" id="currently-running-view">
@@ -96,16 +96,16 @@
         <thead>
         <tr>
           <th>#</th>
-          <th>Flow</th>
-          <th>Project</th>
-          <th>Submitted by</th>
-          <th>First Schedule to Run</th>
-          <th>Next Execution Time</th>
-          <th>Schedule</th>
-          <th>Max Wait Mins</th>
-          <th>Dependencies</th>
-          <th>Is Paused</th>
-          <th>Pause/Resume</th>
+          <th>$flow</th>
+          <th>$project</th>
+          <th>$submittedBy</th>
+          <th>$firstScheduletoRun</th>
+          <th>$nextExecutionTime</th>
+          <th>$scheduleTag</th>
+          <th>$maxWaitMins</th>
+          <th>$dependenciesTag</th>
+          <th>$isPaused</th>
+          <th>$pauseResume</th>
         </tr>
         </thead>
         <tbody>

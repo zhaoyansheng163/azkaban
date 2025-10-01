@@ -36,6 +36,7 @@
     var projectId = ${project.id};
     var execAccess = ${exec};
     var projectName = "$project.name";
+    var langType = "${currentlangType}";
   </script>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css">
@@ -95,8 +96,8 @@
             #end
           #else
             <div class="callout callout-default">
-              <h4>No Flows</h4>
-              <p>No flows have been uploaded to this project yet.</p>
+              <h4>$noFlow</h4>
+              <p>$noFlowTips</p>
             </div>
           #end
         </div><!-- /#flow-tabs -->

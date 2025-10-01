@@ -26,11 +26,11 @@
 <div class="row">
   <div class="col-xs-12">
     <h3>
-      Scheduling
+      正在运行的定时任务
       {?schedule}
         <div class="pull-right">
           <button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger"
-                  onclick="removeSched({schedule.scheduleId})">Remove Schedule
+                  onclick="removeSched({schedule.scheduleId})">删除调度
           </button>
         </div>
       {/schedule}
@@ -77,7 +77,7 @@
             {/schedule.slaOptions}
             <div class="pull-right">
               <button type="button" id="addSlaBtn" class="btn btn-xs btn-primary"
-                      onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')">View/Set
+                      onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')">查看/设置SLA告警
                 SLA
               </button>
             </div>

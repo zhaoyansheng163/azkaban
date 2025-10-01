@@ -25,6 +25,14 @@ import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
+import azkaban.user.*;
+import azkaban.utils.StringUtils;
+import azkaban.webapp.WebMetrics;
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
 import azkaban.spi.EventType;
 import azkaban.user.Permission;
 import azkaban.user.Role;
@@ -50,6 +58,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -132,6 +147,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
       return;
     }
+    if (hasParam(req, "ajax")) {
+      String queryString = req.getQueryString();
+      if (queryString != null && queryString.contains("exchangeLanguage")) {
+         doChangeLangue(req,resp);
+      }
+    }
 
     if (session != null) {
       if (logger.isDebugEnabled()) {
@@ -188,6 +209,41 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         handleLogin(req, resp);
       }
     }
+  }
+
+  private void doChangeLangue(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    try {
+      String languageType = (String) req.getSession().getAttribute("TRANS_I18N_LOCALE");
+      if (languageType == null || languageType.isEmpty()) {
+        languageType = req.getHeader("Accept-Language");
+        String type = languageType.split(",")[0];
+        if (type.equalsIgnoreCase("zh-CN") || type.equalsIgnoreCase("zh")) {
+          languageType = "zh_CN";
+        } else {
+          languageType = "en_US";
+        }
+      } else {
+        if ("zh_CN".equals(languageType)) {
+          languageType = "en_US";
+        }else {
+          languageType = "zh_CN";
+        }
+      }
+      req.getSession().setAttribute("TRANS_I18N_LOCALE", languageType);
+      LoadJsonUtils.setLanguageType(languageType);
+
+      if (logger.isDebugEnabled()) {
+        logger.debug("system languageType is {} " + languageType);
+      }
+    } catch (Exception e) {
+      logger.error("a fatal error had happen when init locale languageType, caused by:" + e);
+      LoadJsonUtils.setLanguageType("zh_CN");
+    }
+    doRefeash(resp);
+  }
+
+  private void doRefeash(HttpServletResponse resp) throws IOException {
+    logger.info("should refresh page");
   }
 
   /**
@@ -351,6 +407,27 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       return;
     }
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
+
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> loginMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.login.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      this.passwordPlaceholder = "密码";
+    }else {
+      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.login.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      this.passwordPlaceholder = "Password";
+    }
+    loginMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+
     page.add("passwordPlaceholder", this.passwordPlaceholder);
     if (errorMsg != null) {
       page.add("errorMsg", errorMsg);

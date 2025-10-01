@@ -31,10 +31,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.utils.PagingListStreamUtil;
 import org.apache.log4j.Logger;
 
 /**
@@ -112,6 +116,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       ret.put("projects", simplifiedProjects);
     } else if (API_FETCH_USER_PROJECTS.equals(ajaxName)) {
       handleFetchUserProjects(req, session, manager, ret);
+    } else if (ajaxName.equals("fetchProjectPage")) {
+      //handleProjectPage(req, resp, session, manager, ret);
+    } else if (ajaxName.equals("getProjectPageLanguageType")) {
+      ajaxGetProjectPageLanguageType(req, resp, session, ret);
     }
 
     this.writeJSON(resp, ret);
@@ -162,6 +170,34 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
+   * 读取 index.vm 及其子页面的国际化资源数据
+   * @return
+   */
+  private Map<String, Map<String, String>> loadIndexpageI18nData() {
+
+    Map<String, Map<String, String>> dataMap = new HashMap<>();
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> indexMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      indexMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.index.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }else {
+      indexMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.index.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }
+
+    dataMap.put("index.vm", indexMap);
+    dataMap.put("nav.vm", subPageMap1);
+    return dataMap;
+  }
+
+  /**
    * Renders the user homepage that users see when they log in
    */
   private void handlePageRender(final HttpServletRequest req,
@@ -170,6 +206,11 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+
+    // FIXME Load international resources.
+    Map<String, Map<String, String>> vmDataMap = loadIndexpageI18nData();
+    vmDataMap.forEach((vm, data) -> data.forEach(page::add));
+    page.add("userGroups", user.getGroups());
 
     if (this.lockdownCreateProjects &&
         !UserUtils.hasPermissionforAction(this.userManager, user, Permission.Type.CREATEPROJECTS)) {
@@ -189,6 +230,9 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       page.add("viewProjects", "personal");
       page.add("projects", projects);
     }
+    String languageType = LoadJsonUtils.getLanguageType();
+
+    page.add("currentlangType", languageType);
 
     page.render();
   }
@@ -200,6 +244,40 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       if (!searchTerm.equals("") && !searchTerm.equals(".*")) {
         handleFilter(req, resp, session, searchTerm);
         return;
+      }else{
+        final ProjectManager manager =
+                ((AzkabanWebServer) getApplication()).getProjectManager();
+        final User user = session.getUser();
+        final Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+
+        // 加载国际化资源
+        Map<String, Map<String, String>> vmDataMap = loadIndexpageI18nData();
+        vmDataMap.forEach((vm, data) -> data.forEach(page::add));
+
+        page.add("userGroups", user.getGroups());
+
+        //final List<Project> projects = manager.getUserProjects(user);
+        // FIXME Add permission judgment, admin user can view all projects, user user can only view their own projects.
+        if (hasParam(req, "all")) {
+          final List<Project> projects;
+          //添加权限判断 admin 用户能查看所有Project
+          if(user.getRoles().contains("admin")){
+            projects = manager.getProjects();
+          }else{//user用户只能查看自己的Project
+            projects = manager.getUserProjects(user);
+          }
+          page.add("viewProjects", "all");
+          page.add("projects", projects);
+        }else {
+          final List<Project> projects = manager.getUserProjects(user);
+          page.add("viewProjects", "personal");
+          page.add("projects", projects);
+        }
+        String languageType = LoadJsonUtils.getLanguageType();
+
+        page.add("currentlangType", languageType);
+
+        page.render();
       }
     }
   }
@@ -210,17 +288,30 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
     final ProjectManager manager = getApplication().getProjectManager();
     final Page page =
         newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+    // 加载国际化资源
+    Map<String, Map<String, String>> vmDataMap = loadIndexpageI18nData();
+    vmDataMap.forEach((vm, data) -> data.forEach(page::add));
+
+    page.add("userGroups", user.getGroups());
     if (hasParam(req, "all")) {
       // do nothing special if one asks for 'ALL' projects
       final List<Project> projects = manager.getProjectsByRegex(searchTerm);
       page.add("allProjects", "");
       page.add("projects", projects);
       page.add("search_term", searchTerm);
+      page.add("viewProjects", "all");
+    } else if (hasParam(req, "group")) {
+      page.add("search_term", searchTerm);
+      page.add("viewProjects", "group");
     } else {
       final List<Project> projects = manager.getUserProjectsByRegex(user, searchTerm);
       page.add("projects", projects);
       page.add("search_term", searchTerm);
+      page.add("viewProjects", "personal");
     }
+    String languageType = LoadJsonUtils.getLanguageType();
+
+    page.add("currentlangType", languageType);
 
     page.render();
   }
@@ -309,6 +400,138 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
         final List<Pair<String, Permission>> groupPermissions) {
       this.groupPermissions = groupPermissions;
     }
+
+  }
+  /**
+   * 获取当前语言
+   * @param req
+   * @param resp
+   * @param session
+   * @param ret
+   */
+  private void ajaxGetProjectPageLanguageType(final HttpServletRequest req, final HttpServletResponse resp,
+                                              final Session session, final HashMap<String, Object> ret) {
+
+    try {
+      String languageType = LoadJsonUtils.getLanguageType();
+      ret.put("langType", languageType);
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+      logger.error("languageType load error: caused by:", e);
+    }
+  }
+  /**
+   * 项目页面 项目分页处理方法
+   */
+//  private void handleProjectPage(final HttpServletRequest req,
+//                                 final HttpServletResponse resp, final Session session, final ProjectManager manager,
+//                                 final HashMap<String, Object> ret) {
+//    final User user = session.getUser();
+//
+//    try {
+//      final int start = getIntParam(req, "start");
+//      final int pageSize = getIntParam(req, "length");
+//      final String projectsType = getParam(req, "projectsType");
+//      final int pageNum = getIntParam(req, "pageNum");
+//      final String orderOption = getParam(req, "order");
+//
+//      //如果输入了快捷搜索
+//      if ("doaction".equals(projectsType) && hasParam(req, "doaction")) {
+//        //去除搜索字符串的空格
+//        final String searchTerm = getParam(req, "searchterm").trim();
+//        if ("true".equals(getParam(req, "all"))) {
+//
+//        }
+//
+//        } else {//只查获自己创建的项目
+//          final List<Project> searchUserProject =
+//                  manager.getUserPersonProjectsByRegex(user, searchTerm, orderOption);
+//          final PagingListStreamUtil<Project> pageProjectsList
+//                  = manager.getUserProjectsPage(pageNum, pageSize, searchUserProject);
+//
+//          assemblerProjectData(pageProjectsList.currentPageData(),
+//                  searchUserProject.size(), start, pageSize, ret, user);
+//        }
+//      }else{
+//        if ("all".equals(projectsType)) {
+//          final List<Project> projects;
+//          //添加权限判断 admin 用户能查看所有Project
+//          if(user.getRoles().contains("admin")){
+//
+//            projects = manager.getProjects(orderOption);
+//
+//            final PagingListStreamUtil<Project> pageProjectsList
+//                    = manager.getAllProjectsPage(pageNum, pageSize, projects);
+//
+//            assemblerProjectData(pageProjectsList.currentPageData(),
+//                    projects.size(), start, pageSize, ret, user);
+//
+//          } else if (systemManager.isDepartmentMaintainer(user)) {
+//            List<Integer> maintainedProjectIds = systemManager.getMaintainedProjects(user);
+//            projects = manager.getMaintainedProjects(user, maintainedProjectIds, orderOption);
+//            final PagingListStreamUtil<Project> pageProjectsList
+//                    = manager.getAllProjectsPage(pageNum, pageSize, projects);
+//
+//            assemblerProjectData(pageProjectsList.currentPageData(),
+//                    projects.size(), start, pageSize, ret, user);
+//          } else{//user用户只能查看自己有权限的项目
+//            projects = manager.getUserAllProjects(user, orderOption);
+//
+//            if(projects.size() > 0) {
+//              final PagingListStreamUtil<Project> pageProjectsList
+//                      = manager.getUserProjectsPage(pageNum, pageSize, projects);
+//
+//              assemblerProjectData(pageProjectsList.currentPageData(),
+//                      projects.size(), start, pageSize, ret, user);
+//            }else {
+//              ret.put("total", 0);
+//            }
+//          }
+//        } else {//只查获自己创建的项目
+//
+//          final List<Project> projects = manager.getUserProjects(user, orderOption);
+//
+//          if(projects.size() > 0){
+//            final PagingListStreamUtil<Project> pageProjectsList
+//                    = manager.getUserProjectsPage(pageNum, pageSize, projects);
+//
+//            assemblerProjectData(pageProjectsList.currentPageData(),
+//                    projects.size(), start, pageSize, ret, user);
+//
+//
+//          }else {
+//            ret.put("total", 0);
+//          }
+//        }
+//      }
+//    } catch (ServletException e) {
+//      e.printStackTrace();
+//    }
+//  }
+
+  private void assemblerProjectData(List<Project> projectList,
+                                    int total, int start, int pageSize, HashMap<String, Object> ret, User user){
+    List<Map<String, String>> projectMapList = new ArrayList<>();
+    WebUtils webUtils = new WebUtils();
+    boolean isAdmin = user.getRoles().contains("admin");
+    for(Project project : projectList){
+      Map<String, String> pmap = new HashMap<>();
+      pmap.put("name",project.getName());
+      pmap.put("description",project.getDescription());
+      pmap.put("lastModifiedUser",project.getLastModifiedUser());
+      //pmap.put("lastModifiedTimestamp", webUtils.formatDateTime(project.getLastModifiedTimestamp()));
+      // 页面删除按钮显示判断
+//      if(isAdmin || hasPermission(project, user, Permission.Type.ADMIN)
+//              || hasPermission(project, user, Type.DEPMAINTAINER)){
+//        pmap.put("showDeleteBtn", "true");
+//      }
+      projectMapList.add(pmap);
+    }
+
+    ret.put("total", total);
+    ret.put("from", start);
+    ret.put("length", pageSize);
+    ret.put("projectList", projectMapList);
 
   }
 }

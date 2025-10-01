@@ -195,18 +195,18 @@
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true"
                     id="close-btn">&times;
             </button>
-            <h4 class="modal-title">Edit Job</h4>
+            <h4 class="modal-title">$editJob</h4>
           </div>
           <div class="modal-body">
-            <h4>Job Essentials</h4>
+            <h4>$basicJobProperty</h4>
             <table class="table table-bordered table-condensed">
               <tbody>
               <tr>
-                <td class="property-key">Job Name</td>
+                <td class="property-key">$jobName</td>
                 <td id="jobName"></td>
               </tr>
               <tr>
-                <td class="property-key">Job Type</td>
+                <td class="property-key">$jobType</td>
                 <td id="jobType"></td>
               </tr>
               </tbody>
@@ -233,9 +233,9 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-default" id="cancel-btn" data-dismiss="modal">
-              Cancel
+              $quit
             </button>
-            <button type="button" class="btn btn-primary" id="set-btn">Set/Change Job Description
+            <button type="button" class="btn btn-primary" id="set-btn">$save
             </button>
           </div>
         </div>

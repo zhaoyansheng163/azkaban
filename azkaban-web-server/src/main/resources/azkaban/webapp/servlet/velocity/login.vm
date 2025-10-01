@@ -24,6 +24,7 @@
   <script type="text/javascript" src="${context}/js/azkaban/view/login.js"></script>
   <script type="text/javascript">
     var contextURL = "${context}";
+    var langType = "${currentlangType}";
   </script>
 </head>
 <body>
@@ -38,12 +39,12 @@
     <div class="well">
       <form id="login-form" role="form">
         <fieldset>
-          <legend>Login</legend>
+          <legend>$loginPage</legend>
           <input type="text" class="form-control" name="username" id="username"
-                 placeholder="Username">
+                 placeholder=$userName>
           <input type="password" class="form-control" name="password" id="password"
                  placeholder="${passwordPlaceholder}">
-          <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">$login
           </button>
         </fieldset>
       </form>

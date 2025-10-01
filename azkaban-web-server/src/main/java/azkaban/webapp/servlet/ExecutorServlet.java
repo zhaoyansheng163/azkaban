@@ -16,6 +16,8 @@
 package azkaban.webapp.servlet;
 
 import azkaban.Constants;
+import azkaban.executor.*;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ClusterInfo;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -51,19 +53,21 @@ import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
+import com.webank.wedatasphere.schedulis.common.utils.LogErrorCodeFilterUtils;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.*;
+
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
@@ -185,6 +189,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
         } else if (API_FETCH_EXEC_JOB_LOGS.equals(ajaxName)) {
           ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+        } else if (ajaxName.equals("getOperationParameters")) {
+          ajaxGetOperationParameters(req, resp, ret, session.getUser(), exFlow);
+        } else if (ajaxName.equals("fetchExecJobStats")) {
         } else if (API_FETCH_EXEC_JOB_STATS.equals(ajaxName)) {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
         } else if (API_RETRY_FAILED_JOBS.equals(ajaxName)) {
@@ -226,6 +233,78 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (ret != null) {
       this.writeJSON(resp, ret);
     }
+  }
+
+  /**
+   * 读取executingflowpage.vm及其子页面的国际化资源数据
+   * @return
+   */
+  private Map<String, Map<String, String>> loadExecutingflowpageI18nData() {
+    Map<String, Map<String, String>> dataMap = new HashMap<>();
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> executingflowpageMap;
+    Map<String, String> subPageMap1;
+    Map<String, String> subPageMap2;
+    Map<String, String> subPageMap3;
+    Map<String, String> subPageMap4;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      // 添加国际化标签
+      executingflowpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.executingflowpage.vm");
+
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.flow-schedule-ecution-panel.vm");
+
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.messagedialog.vm");
+
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.flowgraphview.vm");
+    }else {
+      // 添加国际化标签
+      executingflowpageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.executingflowpage.vm");
+
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.flow-schedule-ecution-panel.vm");
+
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.messagedialog.vm");
+
+      subPageMap4 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.flowgraphview.vm");
+    }
+
+    dataMap.put("executingflowpage.vm", executingflowpageMap);
+    dataMap.put("nav.vm", subPageMap1);
+    dataMap.put("flow-schedule-ecution-panel.vm", subPageMap2);
+    dataMap.put("messagedialog.vm", subPageMap3);
+    dataMap.put("flowgraphview.vm", subPageMap4);
+
+    return dataMap;
+  }
+
+  /**
+   * 加载ExecutorServlet中的异常信息等国际化资源
+   * @return
+   */
+  private Map<String, String> loadExecutorServletI18nData() {
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> dataMap;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      dataMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.ExecutorServlet");
+    }else {
+      dataMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.ExecutorServlet");
+    }
+    return dataMap;
   }
 
   /**
@@ -330,6 +409,35 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       IOException {
     final Page page = newPage(req, resp, session,
         "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> jobdetailspageMap;
+    Map<String, String> subPageMap1;
+    Map<String, String> subPageMap2;
+    Map<String, String> subPageMap3;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      jobdetailspageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.jobdetailspage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.jobdetailsheader.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.log-auto-refresh-option.vm");
+    }else {
+      jobdetailspageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.jobdetailspage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+      subPageMap2 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.jobdetailsheader.vm");
+      subPageMap3 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.log-auto-refresh-option.vm");
+    }
+
+    jobdetailspageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+    subPageMap2.forEach(page::add);
+    subPageMap3.forEach(page::add);
     final User user = session.getUser();
     final int execId = getIntParam(req, "execid");
     final String jobId = getParam(req, "job");
@@ -360,6 +468,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       page.add("jobViewerPlugins", jobViewerPlugins);
     } catch (final ExecutorManagerException e) {
       page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
+      page.add("currentlangType", languageType);
       page.render();
       return;
     }
@@ -386,7 +495,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("pastAttempts", node.getAttempt() > 0 ?
         node.getPastAttemptList().size() : 0);
     page.add("jobFailed", node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED);
-
+    page.add("currentlangType", languageType);
     page.render();
   }
 
@@ -396,6 +505,25 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final Page page =
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/executionspage.vm");
+
+    String languageType = LoadJsonUtils.getLanguageType();
+    Map<String, String> executionspageMap;
+    Map<String, String> subPageMap1;
+    if (languageType.equalsIgnoreCase("zh_CN")) {
+      executionspageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.executionspage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }else {
+      executionspageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.executionspage.vm");
+      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+              "azkaban.webapp.servlet.velocity.nav.vm");
+    }
+
+    executionspageMap.forEach(page::add);
+    subPageMap1.forEach(page::add);
+    page.add("currentlangType", languageType);
 
     final List<Pair<ExecutableFlow, Optional<Executor>>> runningFlows =
         this.executorManagerAdapter.getActiveFlowsWithExecutor();
@@ -444,7 +572,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", triggerInst.getFlowId());
-
+    String languageType = LoadJsonUtils.getLanguageType();
+    page.add("currentlangType", languageType);
     page.render();
   }
 
@@ -475,6 +604,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     final int execId = getIntParam(req, "execid");
     page.add("execid", execId);
     page.add("triggerInstanceId", "-1");
+    page.add("loginUser", user.getUserId());
+    //page.add("nodeNestedId", nodeNestedId);
+
+    // 加载国际化资源
+    Map<String, Map<String, String>> dataMap = loadExecutingflowpageI18nData();
+    dataMap.forEach((vm, data) -> data.forEach(page::add));
 
     ExecutableFlow flow = null;
     try {
@@ -504,16 +639,22 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
-
-    // check the current flow definition to see if the flow is locked.
-    final Flow currentFlow = project.getFlow(flow.getFlowId());
-    boolean isCurrentFlowLocked = false;
-    if (currentFlow != null) {
-      isCurrentFlowLocked = currentFlow.isLocked();
-    } else {
-      logger.info("Flow {} not found in project {}.", flow.getFlowId(), project.getName());
-    }
-    page.add("isLocked", isCurrentFlowLocked);
+    //final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
+//
+//    final boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
+//
+//    if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
+//      page.add("execPerm", true);
+//    } else {
+//      page.add("execPerm", false);
+//    }
+//    if (perm.isPermissionSet(Type.SCHEDULE) || adminPerm) {
+//      page.add("schedulePerm", true);
+//    } else {
+//      page.add("schedulePerm", false);
+//    }
+    String languageType = LoadJsonUtils.getLanguageType();
+    page.add("currentlangType", languageType);
 
     page.render();
   }
@@ -625,6 +766,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (final ExecutorManagerException e) {
       throw new ServletException(e);
     }
+  }
+
+  /**
+   * 获取作业流运行参数
+   * @throws ServletException
+   */
+  private void ajaxGetOperationParameters(final HttpServletRequest req, final HttpServletResponse resp,
+                                          final HashMap<String, Object> ret, final User user,
+                                          final ExecutableFlow exFlow) throws ServletException {
+    final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+    if (project == null) {
+      return;
+    }
+    ret.put("flowParams", exFlow.getExecutionOptions().getFlowParameters());
+    ret.put("jobOutputGlobalParams", exFlow.getJobOutputGlobalParam());
   }
 
   private Map<String, Object> appendLogData(final LogData data, final int defaultOffset) {
