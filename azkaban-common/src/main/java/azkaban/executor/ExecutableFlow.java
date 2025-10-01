@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.sla.SlaOption;
@@ -53,11 +54,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String FLOW_LOCK_ERROR_MESSAGE_PARAM = "flowLockErrorMessage";
   public static final String OTHEROPTIONS_PARAM = "otherOptions";
   public static final String JOB_OUTPUT_GLOBAL_PARAM = "jobOutputGlobalParam";
+  public static final String EXECUTION_SOURCE = "executionSource";
+  public static final String FLOW_DISPATCH_METHOD = "dispatch_method";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
+  private String executionSource;
   private String projectName;
   private String lastModifiedUser;
   private int version;
@@ -93,6 +97,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   private ExecutableFlowRampMetadata executableFlowRampMetadata;
   private String flowLockErrorMessage;
+  // For Flow_Status_Changed event
+  private String failedJobId = "unknown";
+  private String modifiedBy = "unknown";
+  private DispatchMethod dispatchMethod;
+
+  // For slaOption information
+  private String slaOptionStr = "null";
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -117,6 +128,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     // overwrite status from the flow data blob as that one should NOT be used
     exFlow.setStatus(status);
     return exFlow;
+  }
+
+  public DispatchMethod getDispatchMethod() {
+    return this.dispatchMethod;
+  }
+
+  public void setDispatchMethod(final DispatchMethod dispatchMethod) {
+    this.dispatchMethod = dispatchMethod;
   }
 
   @Override
@@ -196,6 +215,15 @@ public class ExecutableFlow extends ExecutableFlowBase {
   }
 
   @Override
+  public String getExecutionSource() {
+    return this.executionSource;
+  }
+
+  public void setExecutionSource(final String executionSource) {
+    this.executionSource = executionSource;
+  }
+
+  @Override
   public String getProjectName() {
     return this.projectName;
   }
@@ -261,6 +289,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.flowLockErrorMessage = flowLockErrorMessage;
   }
 
+  public String getSlaOptionStr() {
+    return slaOptionStr;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     final HashMap<String, Object> flowObj = new HashMap<>();
@@ -276,6 +308,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
 
     flowObj.put(SUBMITUSER_PARAM, this.submitUser);
+    flowObj.put(EXECUTION_SOURCE, this.executionSource);
     flowObj.put(VERSION_PARAM, this.version);
     flowObj.put(LASTMODIFIEDTIME_PARAM, this.lastModifiedTimestamp);
     flowObj.put(LASTMODIFIEDUSER_PARAM, this.lastModifiedUser);
@@ -301,6 +334,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(IS_LOCKED_PARAM, this.isLocked);
     flowObj.put(FLOW_LOCK_ERROR_MESSAGE_PARAM, this.flowLockErrorMessage);
+    flowObj.put(FLOW_DISPATCH_METHOD, getDispatchMethod().getNumVal());
 
     return flowObj;
   }
@@ -315,6 +349,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     this.projectId = flowObj.getInt(PROJECTID_PARAM);
     this.projectName = flowObj.getString(PROJECTNAME_PARAM);
+    this.executionSource = flowObj.getString(EXECUTION_SOURCE);
     this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
     this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
     this.version = flowObj.getInt(VERSION_PARAM);
@@ -342,6 +377,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
           flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
               .collect(Collectors.toList());
       this.executionOptions.setSlaOptions(slaOptions);
+      // Fill slaOptionStr a comma delimited String of slaOptions
+      StringBuilder slaBuilder = new StringBuilder();
+      for (SlaOption slaOption: slaOptions){
+        slaBuilder.append(slaOption.toString());
+        slaBuilder.append(';');
+      }
+      this.slaOptionStr = slaBuilder.toString();
     }
     //设置其他数据参数
     if(flowObj.containsKey(OTHEROPTIONS_PARAM)){
@@ -355,6 +397,9 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
     this.setLocked(flowObj.getBool(IS_LOCKED_PARAM, false));
     this.setFlowLockErrorMessage(flowObj.getString(FLOW_LOCK_ERROR_MESSAGE_PARAM, null));
+    // Dispatch Method default is POLL
+    this.setDispatchMethod(DispatchMethod.fromNumVal(flowObj.getInt(FLOW_DISPATCH_METHOD,
+        DispatchMethod.POLL.getNumVal())));
   }
 
   @Override
@@ -396,4 +441,18 @@ public class ExecutableFlow extends ExecutableFlowBase {
         .map(metadata -> metadata.selectRampPropsForJob(jobId, jobType))
         .orElse(null);
   }
+
+  public void setFailedJobId(String id) {
+     this.failedJobId = id;
+  }
+
+  public String getFailedJobId() {
+    return failedJobId;
+  }
+
+  @Override
+  public String getModifiedBy() { return modifiedBy; }
+
+  @Override
+  public void setModifiedBy(String id) { this.modifiedBy = id; }
 }

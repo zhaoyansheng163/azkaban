@@ -17,21 +17,43 @@
 
 package azkaban.webapp;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.Constants.ContainerizedDispatchManagerProperties;
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutionController;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.executor.container.ContainerizedImpl;
+import azkaban.executor.container.ContainerizedImplType;
 import azkaban.flowtrigger.database.FlowTriggerInstanceLoader;
 import azkaban.flowtrigger.database.JdbcFlowTriggerInstanceLoaderImpl;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginException;
 import azkaban.flowtrigger.plugin.FlowTriggerDependencyPluginManager;
+import azkaban.imagemgmt.services.ImageMgmtCommonService;
+import azkaban.imagemgmt.services.ImageMgmtCommonServiceImpl;
+import azkaban.imagemgmt.services.ImageRampupService;
+import azkaban.imagemgmt.services.ImageRampupServiceImpl;
+import azkaban.imagemgmt.services.ImageTypeService;
+import azkaban.imagemgmt.services.ImageTypeServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionService;
+import azkaban.imagemgmt.services.ImageVersionServiceImpl;
+import azkaban.imagemgmt.services.ImageVersionMetadataService;
+import azkaban.imagemgmt.services.ImageVersionMetadataServiceImpl;
+import azkaban.imagemgmt.version.JdbcVersionSetLoader;
+import azkaban.imagemgmt.version.VersionSetLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
+import azkaban.webapp.metrics.DummyWebMetricsImpl;
+import azkaban.webapp.metrics.WebMetrics;
+import azkaban.webapp.metrics.WebMetricsImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import java.lang.reflect.Constructor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -79,11 +101,53 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+    bind(WebMetrics.class).to(resolveWebMetricsClass()).in(Scopes.SINGLETON);
+    bindImageManagementDependencies();
+  }
+
+  private Class<? extends ContainerizedImpl> resolveContainerizedImpl() {
+    final String containerizedImplProperty =
+        props.getString(ContainerizedDispatchManagerProperties.CONTAINERIZED_IMPL_TYPE,
+            ContainerizedImplType.KUBERNETES.name())
+            .toUpperCase();
+    return ContainerizedImplType.valueOf(containerizedImplProperty).getImplClass();
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {
-    return this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)
-        ? ExecutionController.class : ExecutorManager.class;
+    switch (DispatchMethod.getDispatchMethod(this.props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()))) {
+      case POLL:
+        return ExecutionController.class;
+      case CONTAINERIZED:
+        bind(ContainerizedImpl.class).to(resolveContainerizedImpl());
+        return ContainerizedDispatchManager.class;
+      case PUSH:
+      default:
+        return ExecutorManager.class;
+    }
+  }
+
+  private Class<? extends WebMetrics> resolveWebMetricsClass() {
+    return this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false) ? WebMetricsImpl.class
+        : DummyWebMetricsImpl.class;
+  }
+
+  private void bindImageManagementDependencies() {
+    if(isContainerizedDispatchMethodEnabled()) {
+      bind(ImageTypeService.class).to(ImageTypeServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageVersionService.class).to(ImageVersionServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageRampupService.class).to(ImageRampupServiceImpl.class).in(Scopes.SINGLETON);
+      bind(VersionSetLoader.class).to(JdbcVersionSetLoader.class).in(Scopes.SINGLETON);
+      bind(ImageVersionMetadataService.class).to(ImageVersionMetadataServiceImpl.class).in(Scopes.SINGLETON);
+      bind(ImageMgmtCommonService.class).to(ImageMgmtCommonServiceImpl.class).in(Scopes.SINGLETON);
+    }
+  }
+
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
   @Inject

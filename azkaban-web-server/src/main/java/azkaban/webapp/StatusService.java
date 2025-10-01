@@ -17,17 +17,23 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static azkaban.webapp.servlet.AbstractAzkabanServlet.jarVersion;
 
+import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.container.ContainerizedDispatchManager;
+import azkaban.imagemgmt.dto.ImageVersionMetadataResponseDTO;
+import azkaban.imagemgmt.services.ImageVersionMetadataService;
 import azkaban.utils.Props;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Files;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +41,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,16 +56,19 @@ public class StatusService {
   private final ExecutorLoader executorLoader;
   private final DatabaseOperator dbOperator;
   private final String pidFilename;
+  private final Props props;
 
   @Inject
   public StatusService(final Props props, final ExecutorLoader executorLoader,
       final DatabaseOperator dbOperator) {
     this.executorLoader = executorLoader;
     this.dbOperator = dbOperator;
+    this.props = props;
     this.pidFilename = props.getString(ConfigurationKeys.AZKABAN_PID_FILENAME, "currentpid");
   }
 
-  private static String getInstallationPath() {
+  @VisibleForTesting
+  String getInstallationPath() {
     try {
       return PACKAGE_JAR.getCanonicalPath();
     } catch (final IOException e) {
@@ -65,22 +77,97 @@ public class StatusService {
     }
   }
 
+  /**
+   * Gets the status of the azkaban cluster.
+   *
+   * @return Status
+   */
   public Status getStatus() {
-    final String version = jarVersion == null ? "unknown" : jarVersion;
-    final Runtime runtime = Runtime.getRuntime();
-    final long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+    if (isContainerizedDispatchMethodEnabled()) {
+      return getContainerizedStatus();
+    }
+    return getClusterStatus();
+  }
 
+  /**
+   * This returns implementation instance for Status containing status information for Azkaban
+   * cluster pertaining to web server, memory, active executors etc.
+   *
+   * @return Status
+   */
+  private Status getClusterStatus() {
     // Build the status object
-    return new Status(version,
+    return new ClusterStatus(getVersion(),
         getPid(),
         getInstallationPath(),
-        usedMemory,
-        runtime.maxMemory(),
+        getUsedMemory(),
+        getMaxMemory(),
         getDbStatus(),
         getActiveExecutors());
   }
 
-  private String getPid() {
+  /**
+   * This returns implementation instance for Status containing cluster status information for
+   * Azkaban containerization. It includes information pertaining to web server, memory and
+   * containerization information such as image types and version for each image types selected
+   * based on either random rampup or latest active image version.
+   *
+   * @return Status
+   */
+  private Status getContainerizedStatus() {
+    // Build the status object
+    ContainerizedDispatchManager containerizedDispatchManager = getContainerizedDispatchManager();
+    return new ContainerizedClusterStatus(getVersion(),
+        getPid(),
+        getInstallationPath(),
+        getUsedMemory(),
+        getMaxMemory(),
+        getDbStatus(),
+        getStringImageVersionMetadataResponseDTOMap(),
+        getActiveExecutors(),
+        containerizedDispatchManager.getContainerRampUpCriteria().getRampUp(),
+        containerizedDispatchManager.getContainerJobTypeCriteria().getAllowListAsString());
+  }
+
+  @VisibleForTesting
+  long getUsedMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    return runtime.totalMemory() - runtime.freeMemory();
+  }
+
+  @VisibleForTesting
+  long getMaxMemory() {
+    final Runtime runtime = Runtime.getRuntime();
+    return runtime.maxMemory();
+  }
+
+  private Map<String, ImageVersionMetadataResponseDTO> getStringImageVersionMetadataResponseDTOMap() {
+    Map<String, ImageVersionMetadataResponseDTO> imageTypeVersionMap = new TreeMap<>();
+    try {
+      imageTypeVersionMap =
+          this.getImageVersionMetadataService().getVersionMetadataForAllImageTypes();
+    } catch (final Exception ex) {
+      log.error("Error while geting version metadata for all the image types", ex);
+    }
+    return imageTypeVersionMap;
+  }
+
+  @VisibleForTesting
+  String getVersion() {
+    return jarVersion == null ? "unknown" : jarVersion;
+  }
+
+  private ImageVersionMetadataService getImageVersionMetadataService() {
+    return SERVICE_PROVIDER.getInstance(ImageVersionMetadataService.class);
+  }
+
+  private ContainerizedDispatchManager getContainerizedDispatchManager() {
+    return (ContainerizedDispatchManager) SERVICE_PROVIDER
+        .getInstance(ExecutorManagerAdapter.class);
+  }
+
+  @VisibleForTesting
+  String getPid() {
     final File libDir = PACKAGE_JAR.getParentFile();
     final File installDir = libDir.getParentFile();
     final File pidFile = new File(installDir, this.pidFilename);
@@ -112,6 +199,12 @@ public class StatusService {
       log.error("DB Error", e);
     }
     return false;
+  }
+
+  private boolean isContainerizedDispatchMethodEnabled() {
+    return DispatchMethod.isContainerizedMethodEnabled(props
+        .getString(Constants.ConfigurationKeys.AZKABAN_EXECUTION_DISPATCH_METHOD,
+            DispatchMethod.PUSH.name()));
   }
 
 }

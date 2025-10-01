@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.EncodingType;
 import azkaban.db.SQLTransaction;
@@ -29,7 +30,10 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
@@ -44,6 +48,9 @@ public class ExecutionFlowDao {
   private static final Logger logger = Logger.getLogger(ExecutionFlowDao.class);
   private final DatabaseOperator dbOperator;
   private final MysqlNamedLock mysqlNamedLock;
+
+  private static final String POLLING_LOCK_NAME = "execution_flows_polling";
+  private static final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
 
   @Inject
   public ExecutionFlowDao(final DatabaseOperator dbOperator, final MysqlNamedLock mysqlNamedLock) {
@@ -65,8 +72,11 @@ public class ExecutionFlowDao {
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, "
-        + "use_executor, flow_priority) values (?,?,?,?,?,?,?,?,?)";
+        + "use_executor, flow_priority, execution_source, dispatch_method) values (?,?,?,?,?,?,?,"
+        + "?,?,?,?)";
     final long submitTime = flow.getSubmitTime();
+    final String executionSource = flow.getExecutionSource();
+    final DispatchMethod dispatchMethod = flow.getDispatchMethod();
 
     /**
      * Why we need a transaction to get last insert ID?
@@ -77,7 +87,8 @@ public class ExecutionFlowDao {
     final SQLTransaction<Long> insertAndGetLastID = transOperator -> {
       transOperator.update(INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), flow.getStatus().getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority);
+          submitTime, flow.getSubmitUser(), submitTime, executorId, flowPriority, executionSource
+          , dispatchMethod.getNumVal());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -113,14 +124,49 @@ public class ExecutionFlowDao {
     }
   }
 
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    try {
+      return this.dbOperator.query(FetchExecutableFlows.FETCH_FLOWS_QUEUED_FOR_LONG_TIME,
+          new FetchExecutableFlows(), System.currentTimeMillis() - minAge.toMillis());
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching aged queued flows", e);
+    }
+  }
+
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(final Status status)
       throws ExecutorManagerException {
     try {
       return this.dbOperator.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
-          new FetchQueuedExecutableFlows());
+          new FetchQueuedExecutableFlows(), status.getNumVal());
     } catch (final SQLException e) {
       throw new ExecutorManagerException("Error fetching active flows", e);
     }
+  }
+
+  public List<ExecutableFlow> fetchStaleFlows(final long beforeInMillis)
+      throws ExecutorManagerException {
+    // Sample query created by the string builder:
+    // SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef WHERE
+    //   start_time < ? AND status IN (30, 40, 80, 110)
+    final StringBuilder query = new StringBuilder(FetchExecutableFlows.FETCH_FLOWS_STARTED_BEFORE);
+    query.append(" AND status IN (");
+    query.append(
+        Status.nonFinishingStatusAfterFlowStartsSet.stream()
+            .map(s -> String.valueOf(s.getNumVal()))
+            .collect(Collectors.joining(", ")));
+    query.append(")");
+
+    try {
+      return this.dbOperator.query(query.toString(), new FetchExecutableFlows(), beforeInMillis);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching stale flows", e);
+    }
+  }
+
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+      throws ExecutorManagerException {
+    return fetchStaleFlows(System.currentTimeMillis() - executionDuration.toMillis());
   }
 
   /**
@@ -338,9 +384,10 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
@@ -350,12 +397,13 @@ public class ExecutionFlowDao {
       transOperator.getConnection().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
       final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
-          new SelectFromExecutionFlows(), executorId);
+          new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), executorId);
 
       int execId = -1;
       if (!execIds.isEmpty()) {
         execId = execIds.get(0);
-        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
+        transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(),
+            Status.PREPARING.getNumVal(), execId);
       }
       transOperator.getConnection().commit();
       return execId;
@@ -369,26 +417,28 @@ public class ExecutionFlowDao {
     }
   }
 
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ? "
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET executor_id = ?, update_time = ?, status=? "
         + "where exec_id = ?";
     final String selectExecutionForUpdate = isActive ?
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_ACTIVE :
         SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_INACTIVE;
 
     final SQLTransaction<Integer> selectAndUpdateExecution = transOperator -> {
-      final String POLLING_LOCK_NAME = "execution_flows_polling";
-      final int GET_LOCK_TIMEOUT_IN_SECONDS = 5;
       int execId = -1;
       final boolean hasLocked = this.mysqlNamedLock.getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
       logger.info("ExecutionFlow polling lock value: " + hasLocked + " for executorId: " + executorId);
       if (hasLocked) {
         try {
-          final List<Integer> execIds = transOperator.query(selectExecutionForUpdate, new SelectFromExecutionFlows(), executorId);
+          final List<Integer> execIds = transOperator.query(selectExecutionForUpdate,
+              new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(),
+              executorId);
           if (CollectionUtils.isNotEmpty(execIds)) {
             execId = execIds.get(0);
-            transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(), execId);
+            transOperator.update(UPDATE_EXECUTION, executorId, System.currentTimeMillis(),
+                Status.PREPARING.getNumVal(), execId);
           }
         } finally {
           this.mysqlNamedLock.releaseLock(transOperator, POLLING_LOCK_NAME);
@@ -408,21 +458,118 @@ public class ExecutionFlowDao {
     }
   }
 
+  /**
+   * This method is used to select executions in batch. It will apply lock and fetch executions.
+   * It will also update the status of those executions as mentioned in updatedStatus field.
+   * @param batchEnabled If set to true, fetch the executions in batch
+   * @param limit Limit in case of batch fetch
+   * @param updatedStatus Update the status of executions as mentioned in this field. It can be
+   *                      READY of PREPARING based on whichever is the starting state for any
+   *                      dispatch method.
+   * @return Set of execution ids
+   * @throws ExecutorManagerException
+   */
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
+      final int limit,
+      final Status updatedStatus,
+      final DispatchMethod dispatchMethod)
+      throws ExecutorManagerException {
+    final String UPDATE_EXECUTION = "UPDATE execution_flows SET status = ?, update_time = ? "
+        + "where exec_id = ?";
+    final SQLTransaction<Set<Integer>> selectAndUpdateExecution = transOperator -> {
+      final Set<Integer> executions = new HashSet<>();
+      final boolean hasLocked = this.mysqlNamedLock
+          .getLock(transOperator, POLLING_LOCK_NAME, GET_LOCK_TIMEOUT_IN_SECONDS);
+      logger.debug("ExecutionFlow polling lock value: " + hasLocked);
+      if (hasLocked) {
+        try {
+          final List<Integer> execIds;
+          if (batchEnabled) {
+            execIds = transOperator.query(String
+                    .format(SelectFromExecutionFlows.SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT, ""),
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal(), limit);
+          } else {
+            execIds = transOperator.query(
+                String.format(SelectFromExecutionFlows.SELECT_EXECUTION_FOR_UPDATE_FORMAT, ""),
+                new SelectFromExecutionFlows(), Status.READY.getNumVal(), dispatchMethod.getNumVal());
+          }
+          if (CollectionUtils.isNotEmpty(execIds)) {
+            executions.addAll(execIds);
+            //TODO: Currently transOperator.getConnection().createArrayOf is not supported so
+            //update statement can not have {exec_id in (?)} in where clause. Use below
+            //mentioned code instead of for look for update statement when createArrayOf is
+            //supported
+            //Array executionsToUpdate = transOperator.getConnection().createArrayOf("INTEGER",
+            //    execIds.toArray());
+            //transOperator
+            //      .update(UPDATE_EXECUTION, updatedStatus.getNumVal(), System.currentTimeMillis(),
+            //          executionsToUpdate);
+            for (final Integer execId : execIds) {
+              transOperator
+                  .update(UPDATE_EXECUTION, updatedStatus.getNumVal(), System.currentTimeMillis(),
+                      execId);
+            }
+          }
+        } finally {
+          this.mysqlNamedLock.releaseLock(transOperator, POLLING_LOCK_NAME);
+          logger.debug("Released polling lock");
+        }
+      } else {
+        logger.info("Could not acquire polling lock");
+      }
+      return executions;
+    };
+
+    try {
+      return this.dbOperator.transaction(selectAndUpdateExecution);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error selecting and updating execution", e);
+    }
+  }
+
+  /**
+   * Updates version set id for the given executionId
+   * @param executionId
+   * @param versionSetId
+   * @return int
+   * @throws ExecutorManagerException
+   */
+  public int updateVersionSetId(final int executionId, final int versionSetId)
+      throws ExecutorManagerException {
+    final String UPDATE_VERSION_SET_ID = "UPDATE execution_flows SET version_set_id = ?, "
+        + "update_time = ? where exec_id = ?";
+    try {
+      return this.dbOperator.update(UPDATE_VERSION_SET_ID, versionSetId,
+          System.currentTimeMillis(), executionId);
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException(String.format("Error while updating version set id for "
+          + "execId: %d", executionId), e);
+    }
+  }
+
   public static class SelectFromExecutionFlows implements
       ResultSetHandler<List<Integer>> {
 
     private static final String SELECT_EXECUTION_FOR_UPDATE_FORMAT =
         "SELECT exec_id from execution_flows WHERE exec_id = (SELECT exec_id from execution_flows"
-            + " WHERE status = " + Status.PREPARING.getNumVal()
-            + " and executor_id is NULL and flow_data is NOT NULL and %s"
-            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and executor_id is NULL FOR UPDATE";
+            + " WHERE status = ? and dispatch_method = ?"
+            + " and executor_id is NULL and flow_data is NOT NULL %s"
+            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC LIMIT 1) and "
+            + "executor_id is NULL FOR UPDATE";
+
+    private static final String SELECT_EXECUTION_IN_BATCH_FOR_UPDATE_FORMAT =
+        "SELECT exec_id from execution_flows WHERE exec_id in (SELECT exec_id from execution_flows"
+            + " WHERE status = ? and dispatch_method = ?"
+            + " and executor_id is NULL and flow_data is NOT NULL %s ) "
+            + " ORDER BY flow_priority DESC, update_time ASC, exec_id ASC "
+            + " LIMIT ? FOR UPDATE";
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_ACTIVE =
         String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT,
-            "(use_executor is NULL or use_executor = ?)");
+            "and (use_executor is NULL or use_executor = ?)");
 
     public static final String SELECT_EXECUTION_FOR_UPDATE_INACTIVE =
-        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "use_executor = ?");
+        String.format(SELECT_EXECUTION_FOR_UPDATE_FORMAT, "and use_executor = ?");
 
     @Override
     public List<Integer> handle(final ResultSet rs) throws SQLException {
@@ -447,6 +594,8 @@ public class ExecutionFlowDao {
             + "project_id=? AND flow_id=? AND start_time >= ? ORDER BY start_time DESC";
     static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
         "SELECT ef.exec_id, ef.enc_type, ef.flow_data, ef.status FROM execution_flows ef";
+    private static final String FETCH_FLOWS_STARTED_BEFORE = FETCH_BASE_EXECUTABLE_FLOW_QUERY +
+        " WHERE start_time < ?";
     static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE exec_id=?";
@@ -461,6 +610,11 @@ public class ExecutionFlowDao {
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows "
             + "WHERE project_id=? AND flow_id=? AND status=? "
             + "ORDER BY exec_id DESC LIMIT ?, ?";
+    // Fetch flows that are in preparing state for more than a certain duration.
+    private static final String FETCH_FLOWS_QUEUED_FOR_LONG_TIME =
+        "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
+            + " WHERE submit_time < ? AND status = "
+            + Status.READY.getNumVal();
 
     @Override
     public List<ExecutableFlow> handle(final ResultSet rs) throws SQLException {
@@ -501,8 +655,7 @@ public class ExecutionFlowDao {
     // Select queued unassigned flows
     private static final String FETCH_QUEUED_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data, status FROM execution_flows"
-            + " WHERE executor_id is NULL AND status = "
-            + Status.PREPARING.getNumVal();
+            + " WHERE executor_id is NULL AND status = ?";
 
     @Override
     public List<Pair<ExecutionReference, ExecutableFlow>> handle(final ResultSet rs)
@@ -527,7 +680,7 @@ public class ExecutionFlowDao {
             final ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlow(
                     GZIPUtils.transformBytesToObject(data, encType), status);
-            final ExecutionReference ref = new ExecutionReference(id);
+            final ExecutionReference ref = new ExecutionReference(id, exFlow.getDispatchMethod());
             execFlows.add(new Pair<>(ref, exFlow));
           } catch (final IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);

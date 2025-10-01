@@ -71,8 +71,8 @@ public class FetchActiveFlowDao {
     return null;
   }
 
-  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(final ResultSet rs,
-      final ExecutableFlow exFlow) throws SQLException {
+  private static Pair<ExecutionReference, ExecutableFlow> getPairWithExecutorInfo(
+      final ResultSet rs, final ExecutableFlow exFlow) throws SQLException {
     final int executorId = rs.getInt("executorId");
     final String host = rs.getString("host");
     final int port = rs.getInt("port");
@@ -85,7 +85,7 @@ public class FetchActiveFlowDao {
       final boolean executorStatus = rs.getBoolean("executorStatus");
       executor = new Executor(executorId, host, port, executorStatus);
     }
-    final ExecutionReference ref = new ExecutionReference(exFlow.getExecutionId(), executor);
+    final ExecutionReference ref = new ExecutionReference(exFlow.getExecutionId(), executor, exFlow.getDispatchMethod());
     return new Pair<>(ref, exFlow);
   }
 
@@ -201,7 +201,7 @@ public class FetchActiveFlowDao {
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
             + "   ex.executor_id IS NULL"
-            + "   AND ex.status = " + Status.PREPARING.getNumVal()
+            + "   AND ex.status = " + Status.READY.getNumVal()
             + " )";
 
     @Override
@@ -214,7 +214,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow =
+            FetchActiveFlowDao.getExecutableFlowHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -252,7 +253,8 @@ public class FetchActiveFlowDao {
       final Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
           new HashMap<>();
       do {
-        final Pair<ExecutionReference, ExecutableFlow> exFlow = getExecutableFlowMetadataHelper(rs);
+        final Pair<ExecutionReference, ExecutableFlow> exFlow =
+            FetchActiveFlowDao.getExecutableFlowMetadataHelper(rs);
         if (exFlow != null) {
           execFlows.put(rs.getInt("exec_id"), exFlow);
         }
@@ -280,7 +282,7 @@ public class FetchActiveFlowDao {
             // the condition in ExecutionFlowDao#FETCH_QUEUED_EXECUTABLE_FLOW
             + " AND NOT ("
             + "   ex.executor_id IS NULL"
-            + "   AND ex.status = " + Status.PREPARING.getNumVal()
+            + "   AND ex.status = " + Status.READY.getNumVal()
             + " )";
 
     @Override
@@ -289,7 +291,7 @@ public class FetchActiveFlowDao {
       if (!rs.next()) {
         return null;
       }
-      return getExecutableFlowHelper(rs);
+      return FetchActiveFlowDao.getExecutableFlowHelper(rs);
     }
   }
 

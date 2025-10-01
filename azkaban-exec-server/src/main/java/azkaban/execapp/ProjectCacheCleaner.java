@@ -20,6 +20,7 @@ import azkaban.utils.ExecutorServiceUtils;
 import azkaban.utils.FileIOUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
@@ -101,7 +102,8 @@ class ProjectCacheCleaner {
         projectCacheDir.toPath(), this.percentageOfDisk, this.throttlePercentage);
 
     emptyQCond = barrier.newCondition();
-    deletionService = Executors.newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM);
+    deletionService = Executors.newFixedThreadPool(CLEANING_SERVICE_THREAD_NUM,
+        new ThreadFactoryBuilder().setNameFormat("azk-cleaner-pool-%d").build());
   }
 
   /**
@@ -130,12 +132,12 @@ class ProjectCacheCleaner {
          * recursive space calculation is a very expensive operation.
          */
         projectDirectoryMetadata.setDirSizeInByte(
-            FlowPreparer.calculateDirSizeAndSave(projectDirectoryMetadata.getInstalledDir()));
+            AbstractFlowPreparer.calculateDirSizeAndSave(projectDirectoryMetadata.getInstalledDir()));
       }
 
       projectDirectoryMetadata.setLastAccessTime(
           Files.getLastModifiedTime(Paths.get(projectDirectoryMetadata.getInstalledDir().toString(),
-              FlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
+              AbstractFlowPreparer.PROJECT_DIR_SIZE_FILE_NAME)));
 
     } catch (final Exception e) {
       log.warn("Error while loading project dir metadata for project {}",

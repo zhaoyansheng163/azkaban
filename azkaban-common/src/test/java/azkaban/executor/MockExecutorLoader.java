@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -26,9 +27,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
@@ -429,6 +432,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
+    return fetchQueuedFlows(Status.READY);
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException {
     final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
         new ArrayList<>();
     for (final int execId : this.refs.keySet()) {
@@ -438,6 +447,32 @@ public class MockExecutorLoader implements ExecutorLoader {
       }
     }
     return queuedFlows;
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+      throws ExecutorManagerException {
+    throw new ExecutorManagerException("Method Not Implemented!");
+  }
+
+  @Override
+  // TODO(anish-mal) To be used in a future unit test, once System calls to obtain
+  // current time have been replaced by Clocks. Clocks are needed in order to write
+  // unit tests for duration based features. Without it, the tests end up being flaky.
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    final List<ExecutableFlow> agedQueuedFlows = new ArrayList<>();
+
+    long timeThreshoold = System.currentTimeMillis() - minAge.toMillis();
+    for (final int execId : this.refs.keySet()) {
+      if (!this.executionExecutorMapping.containsKey(execId)) {
+        ExecutableFlow agedFlow = this.flows.get(execId);
+        if (agedFlow.getSubmitTime() < timeThreshoold) {
+          agedQueuedFlows.add(agedFlow);
+        }
+      }
+    }
+    return agedQueuedFlows;
   }
 
   @Override
@@ -452,39 +487,54 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     return 1;
   }
 
   @Override
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
     return 1;
+  }
+
+  @Override
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled,
+      final int limit,
+      final Status updatedStatus,
+      final DispatchMethod dispatchMethod) throws ExecutorManagerException {
+    final Set<Integer> executions = new HashSet<>();
+    executions.add(1);
+    return executions;
   }
 
   @Override
   public ExecutableRampMap fetchExecutableRampMap() throws ExecutorManagerException {
     ExecutableRampMap map = ExecutableRampMap.createInstance();
     map.add("rampId",
-        ExecutableRamp.createInstance(
-        "dali",
-        "RampPolicy",
-        5,
-        10,
-        false,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        false,
-        0,
-        true
-        )
+        ExecutableRamp.builder("dali", "RampPolicy")
+            .setMetadata(ExecutableRamp.Metadata.builder()
+                .setMaxFailureToPause(5)
+                .setMaxFailureToRampDown(10)
+                .setPercentageScaleForMaxFailure(false)
+                .build())
+            .setState(ExecutableRamp.State.builder()
+                .setStartTime(0)
+                .setEndTime(0)
+                .setLastUpdatedTime(0)
+                .setNumOfTrail(0)
+                .setNumOfSuccess(0)
+                .setNumOfFailure(0)
+                .setNumOfIgnored(0)
+                .setPaused(false)
+                .setRampStage(0)
+                .setActive(true)
+                .build())
+            .build()
     );
+
     return map;
   }
 
@@ -525,6 +575,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException {
 
+  }
+
+  @Override
+  public int updateVersionSetId(int executionId, int versionSetId) throws ExecutorManagerException {
+    return 0;
   }
 
   @Override

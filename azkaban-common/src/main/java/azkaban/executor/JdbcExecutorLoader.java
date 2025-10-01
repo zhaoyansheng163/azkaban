@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -84,7 +86,25 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException {
-    return this.executionFlowDao.fetchQueuedFlows();
+    return fetchQueuedFlows(Status.READY);
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchQueuedFlows(status);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchStaleFlows(Duration executionDuration)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchStaleFlows(executionDuration);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchAgedQueuedFlows(final Duration minAge)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.fetchAgedQueuedFlows(minAge);
   }
 
   /**
@@ -349,15 +369,24 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int selectAndUpdateExecution(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecution(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive);
+    return this.executionFlowDao.selectAndUpdateExecution(executorId, isActive, dispatchMethod);
   }
 
   @Override
-  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive)
+  public int selectAndUpdateExecutionWithLocking(final int executorId, final boolean isActive,
+      final DispatchMethod dispatchMethod)
       throws ExecutorManagerException {
-    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive);
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(executorId, isActive, dispatchMethod);
+  }
+
+  @Override
+  public Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, int limit,
+      Status updatedStatus, final DispatchMethod dispatchMethod) throws ExecutorManagerException {
+    return this.executionFlowDao.selectAndUpdateExecutionWithLocking(batchEnabled, limit,
+        updatedStatus, dispatchMethod);
   }
 
   @Override
@@ -404,5 +433,11 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   @Override
   public void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException {
     this.executionFlowDao.unsetExecutorIdForExecution(executionId);
+  }
+
+  @Override
+  public int updateVersionSetId(final int executionId, final int versionSetId)
+      throws ExecutorManagerException {
+    return this.executionFlowDao.updateVersionSetId(executionId, versionSetId);
   }
 }

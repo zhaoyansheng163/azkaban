@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
+import azkaban.DispatchMethod;
 import azkaban.metrics.CommonMetrics;
 import azkaban.metrics.MetricsManager;
 import azkaban.user.User;
@@ -91,17 +92,17 @@ public class ExecutionControllerTest {
     this.allExecutors = ImmutableList.of(executor1, executor2, executor3);
     when(this.loader.fetchActiveExecutors()).thenReturn(this.activeExecutors);
 
-    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1");
-    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
-    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
-    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2");
+    this.flow1 = TestUtils.createTestExecutableFlow("exectest1", "exec1", DispatchMethod.POLL);
+    this.flow2 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
+    this.flow3 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
+    this.flow4 = TestUtils.createTestExecutableFlow("exectest1", "exec2", DispatchMethod.POLL);
     this.flow1.setExecutionId(1);
     this.flow2.setExecutionId(2);
     this.flow3.setExecutionId(3);
     this.flow4.setExecutionId(4);
-    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null);
-    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2);
-    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), executor3);
+    this.ref1 = new ExecutionReference(this.flow1.getExecutionId(), null, DispatchMethod.POLL);
+    this.ref2 = new ExecutionReference(this.flow2.getExecutionId(), executor2, DispatchMethod.POLL);
+    this.ref3 = new ExecutionReference(this.flow3.getExecutionId(), executor3, DispatchMethod.POLL);
 
     this.activeFlows = ImmutableMap
         .of(this.flow2.getExecutionId(), new Pair<>(this.ref2, this.flow2),
@@ -210,7 +211,7 @@ public class ExecutionControllerTest {
   public void testKillQueuedFlow() throws Exception {
     // Flow1 is not assigned to any executor and is in PREPARING status.
     submitFlow(this.flow1, this.ref1);
-    this.flow1.setStatus(Status.PREPARING);
+    this.flow1.setStatus(Status.READY);
     this.controller.cancelFlow(this.flow1, this.user.getUserId());
     // Verify that the status of flow1 is finalized.
     assertThat(this.flow1.getStatus()).isEqualTo(Status.FAILED);

@@ -232,6 +232,7 @@
             <th class="logs">$detail</th>
             <th class="col-xs-1">$operate</th>
             <th class="date">$runBatchDate</th>
+            <th class="cluster">Cluster</th>
           </tr>
           </thead>
           <tbody id="executableBody">

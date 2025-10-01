@@ -15,6 +15,7 @@
  */
 package azkaban.executor;
 
+import azkaban.DispatchMethod;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public interface ExecutorLoader {
@@ -217,7 +219,7 @@ public interface ExecutorLoader {
 
   /**
    * <pre>
-   * Fetch queued flows which have not yet dispatched
+   * Fetch queued flows which have not yet dispatched. It will return flows which are in preparing state.
    * Note:
    * 1. throws an Exception in case of a SQL issue
    * 2. return empty list when no queued execution is found
@@ -227,6 +229,31 @@ public interface ExecutorLoader {
    */
   List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
       throws ExecutorManagerException;
+
+  /**
+   * This method is used to get flows fetched in Queue. Flows can be in queue in ready, dispatching
+   * or preparing state while in queue. That is why it is expecting status in parameter.
+   *
+   * @param status
+   * @return
+   * @throws ExecutorManagerException
+   */
+  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows(Status status)
+      throws ExecutorManagerException;
+
+  /**
+   * Fetch stale flows. A flow is considered stale if it was started more than {@code
+   * executionDuration} ago and is not yet in a final state.
+   *
+   * @param executionDuration
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public List<ExecutableFlow> fetchStaleFlows(final Duration executionDuration)
+      throws ExecutorManagerException;
+
+  List<ExecutableFlow> fetchAgedQueuedFlows(
+      final Duration minAge) throws ExecutorManagerException;
 
   boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
@@ -283,11 +310,26 @@ public interface ExecutorLoader {
 
   void unsetExecutorIdForExecution(final int executionId) throws ExecutorManagerException;
 
-  int selectAndUpdateExecution(final int executorId, boolean isActive)
+  int selectAndUpdateExecution(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
 
-  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive)
+  int selectAndUpdateExecutionWithLocking(final int executorId, boolean isActive, final DispatchMethod dispatchMethod)
       throws ExecutorManagerException;
+
+  /**
+   * This method is used to select executions in batch. It will apply lock and fetch executions. It
+   * will also update the status of those executions as mentioned in updatedStatus field.
+   *
+   * @param batchEnabled  If set to true, fetch the executions in batch
+   * @param limit         Limit in case of batch fetch
+   * @param updatedStatus Update the status of executions as mentioned in this field. It can be
+   *                      READY of PREPARING based on whichever is the starting state for any
+   *                      dispatch method.
+   * @return Set of execution ids
+   * @throws ExecutorManagerException
+   */
+  Set<Integer> selectAndUpdateExecutionWithLocking(final boolean batchEnabled, final int limit,
+      Status updatedStatus, final DispatchMethod dispatchMethod) throws ExecutorManagerException;
 
   ExecutableRampMap fetchExecutableRampMap()
       throws ExecutorManagerException;
@@ -299,9 +341,10 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   ExecutableRampExceptionalFlowItemsMap fetchExecutableRampExceptionalFlowItemsMap()
-    throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
-  void updateExecutedRampFlows(final String ramp, ExecutableRampExceptionalItems executableRampExceptionalItems)
+  void updateExecutedRampFlows(final String ramp,
+      ExecutableRampExceptionalItems executableRampExceptionalItems)
       throws ExecutorManagerException;
 
   ExecutableRampExceptionalJobItemsMap fetchExecutableRampExceptionalJobItemsMap()
@@ -311,4 +354,14 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   void updateExecutableRamp(ExecutableRamp executableRamp) throws ExecutorManagerException;
+
+  /**
+   * Update version set id for the given execution id.
+   * @param executionId
+   * @param versionSetId
+   * @return int
+   * @throws ExecutorManagerException
+   */
+  int updateVersionSetId(final int executionId, final int versionSetId)
+      throws ExecutorManagerException;
 }

@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import azkaban.DispatchMethod;
 import azkaban.event.Event;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -33,6 +34,7 @@ import azkaban.executor.InteractiveTestJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowUtils;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.metrics.CommonMetrics;
@@ -92,7 +94,7 @@ public class FlowRunnerTestUtil {
 
     this.jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
-    pluginSet.addPluginClass("test", InteractiveTestJob.class);
+    pluginSet.addPluginClassName("test", InteractiveTestJob.class.getName());
   }
 
   /**
@@ -191,6 +193,7 @@ public class FlowRunnerTestUtil {
       throws Exception {
     final ExecutableFlow exFlow = FlowRunnerTestUtil
         .prepareExecDir(this.workingDir, this.projectDir, flowName, 1);
+    exFlow.setDispatchMethod(DispatchMethod.POLL);
     if (watcher != null) {
       options.setPipelineLevel(pipeline);
       options.setPipelineExecutionId(watcher.getExecId());
@@ -258,6 +261,7 @@ public class FlowRunnerTestUtil {
     exFlow.setExecutionId(exId);
     if (options != null) {
       exFlow.setExecutionOptions(options);
+      FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exFlow);
     }
     exFlow.getExecutionOptions().addAllFlowParameters(flowParams);
     this.executorLoader.uploadExecutableFlow(exFlow);

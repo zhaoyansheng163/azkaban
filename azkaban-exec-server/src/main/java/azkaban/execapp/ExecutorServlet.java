@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static azkaban.common.ServletUtils.*;
+import static azkaban.server.HttpRequestUtils.*;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -33,6 +35,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -44,7 +48,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
-  public static final String JSON_MIME_TYPE = "application/json";
   private static final Logger logger = Logger.getLogger(ExecutorServlet.class
       .getName());
   private static final long serialVersionUID = -3528600004096666451L;
@@ -69,13 +72,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     this.flowRunnerManager = this.application.getFlowRunnerManager();
   }
 
-  protected void writeJSON(final HttpServletResponse resp, final Object obj)
-      throws IOException {
-    resp.setContentType(JSON_MIME_TYPE);
-    final ObjectMapper mapper = new ObjectMapper();
-    final OutputStream stream = resp.getOutputStream();
-    mapper.writeValue(stream, obj);
-  }
+
 
   /**
    * @deprecated GET available for seamless upgrade. azkaban-web now uses POST.
@@ -120,6 +117,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           setActive(false, respMap);
         } else if (action.equals(ConnectorParams.SHUTDOWN)) {
           shutdown(respMap);
+        } else if (action.equals(ConnectorParams.MODIFY_PROPERTY_ACTION)) {
+          String propName = getParam(req, ConnectorParams.PROPERTY_NAME_PARAM);
+          String propValue = getParam(req, ConnectorParams.PROPERTY_VALUE_PARAM);
+          handleModifyProperty(propName, propValue, respMap);
         } else {
           final int execid = Integer.parseInt(getParam(req, ConnectorParams.EXECID_PARAM));
           final String user = getParam(req, ConnectorParams.USER_PARAM, null);
@@ -160,6 +161,70 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     }
     writeJSON(resp, respMap);
     resp.flushBuffer();
+  }
+
+  private void handleModifyProperty(@Nullable final String propName,
+      @Nullable final String propValue, final HashMap<String, Object> respMap)
+      throws ServletException {
+    if (propName == null || propValue == null) {
+      String errMsg =
+          String.format("Both %s and %s need to be provided for action %s. "  +
+              "(%s, %s) = (%s, %s)", ConnectorParams.PROPERTY_NAME_PARAM, ConnectorParams.PROPERTY_VALUE_PARAM,
+          ConnectorParams.MODIFY_PROPERTY_ACTION, ConnectorParams.PROPERTY_NAME_PARAM,
+          ConnectorParams.PROPERTY_VALUE_PARAM, propName, propValue);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+      return;
+    }
+
+    if (propName.equals(ConnectorParams.POLLING_INTERVAL_MILLIS_PROPERTY_NAME)) {
+      modifyPollingInterval(propValue, respMap);
+    } else {
+      String errMsg = String.format("Modification of %s property is not supported.", propName);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+    }
+  }
+
+  /**
+   * Modifies the time interval at which the executor is polling the queue for unassigned jobs, and
+   * assigning a job(s) to itself.
+   *
+   * @param newPollingIntervalMillis The desired polling interval. It needs to be a positive
+   *                                 integer (milliseconds) in String format.
+   * @param respMap The response map.
+   */
+
+  private void modifyPollingInterval(@Nonnull final String newPollingIntervalMillis,
+      final HashMap<String, Object> respMap) {
+    int pollingIntervalMillis = 0;
+    boolean isValidValue = false;
+    try {
+      pollingIntervalMillis = Integer.parseUnsignedInt(newPollingIntervalMillis);
+      isValidValue =  (pollingIntervalMillis > 0);
+    } catch (NumberFormatException ex) {
+      // isValidValue will continue to be false, which we will used for error handling.
+      // No need to do anything additional in the catch block.
+    }
+
+    if (!isValidValue) {
+      String errMsg = String.format("%s doesn't look like a positive integer." +
+              " (%s, %s) = (%s, %s)", newPollingIntervalMillis, ConnectorParams.PROPERTY_NAME_PARAM,
+          ConnectorParams.PROPERTY_VALUE_PARAM, ConnectorParams.POLLING_INTERVAL_MILLIS_PROPERTY_NAME,
+          newPollingIntervalMillis);
+      logger.error(errMsg);
+      respMap.put(ConnectorParams.RESPONSE_ERROR, errMsg);
+      return;
+    }
+
+    if (flowRunnerManager.changePollingInterval(pollingIntervalMillis)) {
+      respMap.put(ConnectorParams.STATUS_ACTION, String.format("Changed polling interval to %s ms",
+          newPollingIntervalMillis));
+    } else {
+      respMap.put(ConnectorParams.RESPONSE_ERROR, "Failed to change polling interval. Please check"
+          + " the logs for error messages from underlying functions. Please retry if existing "
+          + "schedule got canceled and new one didn't start.");
+    }
   }
 
   private void handleModifyExecutionRequest(final Map<String, Object> respMap,
@@ -411,49 +476,5 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
-  /**
-   * Duplicated code with AbstractAzkabanServlet, but ne
-   */
-  public boolean hasParam(final HttpServletRequest request, final String param) {
-    return request.getParameter(param) != null;
-  }
 
-  public String getParam(final HttpServletRequest request, final String name)
-      throws ServletException {
-    final String p = request.getParameter(name);
-    if (p == null) {
-      throw new ServletException("Missing required parameter '" + name + "'.");
-    } else {
-      return p;
-    }
-  }
-
-  public String getParam(final HttpServletRequest request, final String name,
-      final String defaultVal) {
-    final String p = request.getParameter(name);
-    if (p == null) {
-      return defaultVal;
-    }
-
-    return p;
-  }
-
-  public int getIntParam(final HttpServletRequest request, final String name)
-      throws ServletException {
-    final String p = getParam(request, name);
-    return Integer.parseInt(p);
-  }
-
-  public int getIntParam(final HttpServletRequest request, final String name,
-      final int defaultVal) {
-    if (hasParam(request, name)) {
-      try {
-        return getIntParam(request, name);
-      } catch (final Exception e) {
-        return defaultVal;
-      }
-    }
-
-    return defaultVal;
-  }
 }

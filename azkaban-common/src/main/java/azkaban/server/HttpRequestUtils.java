@@ -15,11 +15,13 @@
  */
 package azkaban.server;
 
+import azkaban.Constants;
+import azkaban.Constants.FlowParameters;
 import azkaban.executor.DisabledJob;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.Role;
@@ -35,11 +37,16 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
 
-  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req)
+  public static final String PARAM_SLA_EMAILS = "slaEmails";
+  public static final String PARAM_SLA_SETTINGS = "slaSettings";
+
+  public static ExecutionOptions parseFlowOptions(final HttpServletRequest req,
+      final String flowName)
       throws ServletException {
     final ExecutionOptions execOptions = new ExecutionOptions();
 
@@ -86,7 +93,7 @@ public class HttpRequestUtils {
           "notifyFailureLast")));
     }
 
-    String concurrentOption = getParam(req, "concurrentOption", "skip");
+    final String concurrentOption = getParam(req, "concurrentOption", "skip");
     execOptions.setConcurrentOption(concurrentOption);
     if (concurrentOption.equals("pipeline")) {
       final int pipelineLevel = getIntParam(req, "pipelineLevel");
@@ -97,10 +104,18 @@ public class HttpRequestUtils {
       execOptions.setPipelineLevel(queueLevel);
     }
 
-    String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
     if (hasParam(req, "mailCreator")) {
-      mailCreator = getParam(req, "mailCreator");
+      final String mailCreator = getParam(req, "mailCreator");
       execOptions.setMailCreator(mailCreator);
+    }
+
+    final Map<String, String> slaSettings = getParamGroup(req, PARAM_SLA_SETTINGS);
+    // emails param is optional
+    final String emailStr = getParam(req, PARAM_SLA_EMAILS, null);
+    final List<SlaOption> slaOptions = SlaRequestUtils.parseSlaOptions(flowName, emailStr,
+        slaSettings);
+    if (!slaOptions.isEmpty()) {
+      execOptions.setSlaOptions(slaOptions);
     }
 
     final Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
@@ -111,7 +126,7 @@ public class HttpRequestUtils {
       if (!disabled.isEmpty()) {
         // TODO edlu: see if it's possible to pass in the new format
         final List<DisabledJob> disabledList =
-            DisabledJob.fromDeprecatedObjectList((List < Object >) JSONUtils
+            DisabledJob.fromDeprecatedObjectList((List<Object>) JSONUtils
                 .parseJSONFromStringQuiet(disabled));
         execOptions.setDisabledJobs(disabledList);
       }
@@ -140,9 +155,13 @@ public class HttpRequestUtils {
     if (!hasPermission(userManager, user, Type.ADMIN)) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
       params.remove(ExecutionOptions.USE_EXECUTOR);
+      params.remove(FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
+      params.remove(FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
     } else {
       validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
       validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
+      validateBooleanParam(params, FlowParameters.FLOW_PARAM_JAVA_ENABLE_DEBUG);
+      validateBooleanParam(params, FlowParameters.FLOW_PARAM_ENABLE_DEV_POD);
     }
   }
 
@@ -156,6 +175,23 @@ public class HttpRequestUtils {
     if (params != null && params.containsKey(paramName)
         && !StringUtils.isNumeric(params.get(paramName))) {
       throw new ExecutorManagerException(paramName + " should be an integer");
+    }
+    return true;
+  }
+
+  /**
+   * Parse a string as boolean and throws exception if parsed value is not a valid boolean.
+   *
+   * @param params
+   * @param paramName
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public static boolean validateBooleanParam(final Map<String, String> params,
+      final String paramName) throws ExecutorManagerException {
+    if (params != null && params.containsKey(paramName) && null ==
+        BooleanUtils.toBooleanObject(params.get(paramName))) {
+      throw new ExecutorManagerException(paramName + " should be boolean");
     }
     return true;
   }
@@ -288,20 +324,21 @@ public class HttpRequestUtils {
   public static Object getJsonBody(final HttpServletRequest request) throws ServletException {
     try {
       return JSONUtils.parseJSONFromString(getBody(request));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new ServletException("HTTP Request JSON Body cannot be parsed.", e);
     }
   }
 
   public static String getBody(final HttpServletRequest request) throws ServletException {
     try {
-      StringBuffer stringBuffer = new StringBuffer();
+      final StringBuffer stringBuffer = new StringBuffer();
       String line = null;
-      BufferedReader reader = request.getReader();
-      while ((line = reader.readLine()) != null)
+      final BufferedReader reader = request.getReader();
+      while ((line = reader.readLine()) != null) {
         stringBuffer.append(line);
+      }
       return stringBuffer.toString();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServletException("HTTP Request Body cannot be parsed.", e);
     }
   }

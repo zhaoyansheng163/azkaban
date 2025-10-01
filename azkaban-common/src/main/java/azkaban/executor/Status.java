@@ -18,9 +18,12 @@ package azkaban.executor;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 
 public enum Status {
   READY(10),
+  DISPATCHING (15),
   PREPARING(20),
   RUNNING(30),
   PAUSED(40),
@@ -38,6 +41,9 @@ public enum Status {
 
   private static final ImmutableMap<Integer, Status> numValMap = Arrays.stream(Status.values())
       .collect(ImmutableMap.toImmutableMap(status -> status.getNumVal(), status -> status));
+
+  public static final Set<Status> nonFinishingStatusAfterFlowStartsSet = new TreeSet<>(
+      Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
 
   private final int numVal;
 
