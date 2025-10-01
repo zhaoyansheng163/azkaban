@@ -3,7 +3,7 @@
 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)[![codecov.io](https://codecov.io/github/azkaban/azkaban/branch/master/graph/badge.svg)](https://codecov.io/github/azkaban/azkaban)[![Join the chat at https://gitter.im/azkaban-workflow-engine/Lobby](https://badges.gitter.im/azkaban-workflow-engine/Lobby.svg)](https://gitter.im/azkaban-workflow-engine/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)[![Documentation Status](https://readthedocs.org/projects/azkaban/badge/?version=latest)](http://azkaban.readthedocs.org/en/latest/?badge=latest)
 
 # 说明
-这是版本 3.90.0的多语言版本（中文、英文），或者说是汉化版本
+这是版本 4.0.0的多语言版本（中文、英文），或者说是汉化版本
 初衷：国内普遍不太习惯英文版本，但是官方并没有做多语言支持，为便于大家使用，整理了这个版本（参考了Schedulis）
 大家一起在这个基础上不断完善，为大家提供一个用着习惯的版本。
 
@@ -36,15 +36,15 @@
 github：
 https://github.com/zhaoyansheng163/azkaban
 
-最新文档版本的汉化版本（3.90.0）
-https://github.com/zhaoyansheng163/azkaban/tree/release3.90.0
+最新文档版本的汉化版本（4.0.0）
+https://github.com/zhaoyansheng163/azkaban/tree/release4.0.0
 
 
 gitee：
 https://gitee.com/zhaoyansheng/azkaban
 
-最新文档版本的汉化版本（3.90.0）
-https://gitee.com/zhaoyansheng/azkaban/tree/release3.90.0/
+最新文档版本的汉化版本（4.0.0）
+https://gitee.com/zhaoyansheng/azkaban/tree/release4.0.0/
 
 
 
@@ -52,7 +52,7 @@ https://gitee.com/zhaoyansheng/azkaban/tree/release3.90.0/
 
 git clone https://gitee.com/zhaoyansheng/azkaban.git
 
-git checkout   release3.90.0
+git checkout   release4.0.0
 
 ./gradlew build -x test
 
@@ -72,7 +72,7 @@ rm -rf ~/.gradle/caches/
 
 
 
-其他操作步骤参考英文版的文档即可。其实差异就是切换到 汉化分支：release3.90.0
+其他操作步骤参考英文版的文档即可。其实差异就是切换到 汉化分支：release4.0.0
 
 
 
