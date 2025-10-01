@@ -16,59 +16,33 @@
 
 package azkaban.webapp.servlet;
 
-import static azkaban.Constants.ConfigurationKeys.OAUTH_PROVIDER_URI_KEY;
-import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
-import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
-import static azkaban.Constants.UTF_8;
-
 import azkaban.imagemgmt.permission.PermissionManager;
 import azkaban.project.Project;
 import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
-import azkaban.user.*;
-import azkaban.utils.StringUtils;
-import azkaban.webapp.WebMetrics;
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
-
 import azkaban.spi.EventType;
-import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserManagerException;
+import azkaban.user.*;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.webapp.CSRFTokenUtility;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static azkaban.Constants.ConfigurationKeys.OAUTH_PROVIDER_URI_KEY;
+import static azkaban.Constants.ConfigurationKeys.OAUTH_REDIRECT_URI_KEY;
+import static azkaban.Constants.OAUTH_USERNAME_PLACEHOLDER;
+import static azkaban.Constants.UTF_8;
 
 
 /**

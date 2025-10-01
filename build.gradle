@@ -50,12 +50,17 @@ allprojects {
   apply plugin: 'jacoco'
 
   repositories {
-    mavenCentral()
-    mavenLocal()
-//  need this for rest.li/pegasus 28.* artifacts until they are in Maven Central:
     maven {
-      url 'https://linkedin.bintray.com/maven'
+      url 'http://192.168.50.201:8081/repository/maven-public/'
     }
+    mavenCentral()
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    mavenLocal()
+    // Add the LinkedIn repository for Pegasus artifacts
+    maven {
+      url 'https://linkedin.jfrog.io/artifactory/open-source/'
+    }
+    maven { url 'https://repo1.maven.org/maven2/' }
   }
 }
 

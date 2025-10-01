@@ -57,6 +57,20 @@ git checkout   release3.90.0
 ./gradlew build -x test
 
 
+如果有问题则
+# 停止正在运行的Gradle守护进程
+./gradlew --stop
+
+# 清理项目构建
+./gradlew clean
+
+# 清理Gradle的依赖缓存<br>（注意：这会清理所有项目的缓存，稍显耗时）
+rm -rf ~/.gradle/caches/
+
+# 重新构建并刷新依赖
+./gradlew build --refresh-dependencies -x test
+
+
 
 其他操作步骤参考英文版的文档即可。其实差异就是切换到 汉化分支：release3.90.0
 
