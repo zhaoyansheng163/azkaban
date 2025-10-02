@@ -37,7 +37,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import i18ntools.i18nutils.LoadJsonUtils;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,14 +179,14 @@ public class FlowTriggerServlet extends LoginAbstractAzkabanServlet {
     Map<String, String> subPageMap1;
     if (languageType.equalsIgnoreCase("zh_CN")) {
       // 添加国际化标签
-      historypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+      historypageMap = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-zh_CN.json",
               "azkaban.webapp.servlet.velocity.flowtriggerspage.vm");
-      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+      subPageMap1 = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-zh_CN.json",
               "azkaban.webapp.servlet.velocity.nav.vm");
     }else {
-      historypageMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+      historypageMap = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-en_US.json",
               "azkaban.webapp.servlet.velocity.flowtriggerspage.vm");
-      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+      subPageMap1 = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-en_US.json",
               "azkaban.webapp.servlet.velocity.nav.vm");
     }
     historypageMap.forEach(page::add);

@@ -25,7 +25,7 @@ import azkaban.user.*;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.webapp.CSRFTokenUtility;
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import i18ntools.i18nutils.LoadJsonUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -387,15 +387,15 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     Map<String, String> subPageMap1;
     if (languageType.equalsIgnoreCase("zh_CN")) {
       // 添加国际化标签
-      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+      loginMap = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-zh_CN.json",
               "azkaban.webapp.servlet.velocity.login.vm");
-      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-zh_CN.json",
+      subPageMap1 = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-zh_CN.json",
               "azkaban.webapp.servlet.velocity.nav.vm");
       this.passwordPlaceholder = "密码";
     }else {
-      loginMap = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+      loginMap = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-en_US.json",
               "azkaban.webapp.servlet.velocity.login.vm");
-      subPageMap1 = LoadJsonUtils.transJson("/com.webank.wedatasphere.schedulis.i18n.conf/azkaban-web-server-en_US.json",
+      subPageMap1 = LoadJsonUtils.transJson("/i18ntools.conf/azkaban-web-server-en_US.json",
               "azkaban.webapp.servlet.velocity.nav.vm");
       this.passwordPlaceholder = "Password";
     }

@@ -16,7 +16,7 @@
 
 package webapp;
 
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import i18ntools.i18nutils.LoadJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
