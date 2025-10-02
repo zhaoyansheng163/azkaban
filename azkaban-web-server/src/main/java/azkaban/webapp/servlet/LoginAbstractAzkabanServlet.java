@@ -27,11 +27,9 @@ import azkaban.server.AzkabanAPI;
 import azkaban.server.session.Session;
 import azkaban.user.*;
 import azkaban.utils.StringUtils;
-import azkaban.webapp.WebMetrics;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
 
 import azkaban.spi.EventType;
 import azkaban.user.Permission;

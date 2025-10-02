@@ -50,6 +50,9 @@ allprojects {
   apply plugin: 'jacoco'
 
   repositories {
+    maven {
+      url 'http://192.168.50.201:8081/repository/maven-public/'
+    }
     mavenCentral()
     mavenLocal()
 //  need this for rest.li/pegasus 28.* artifacts until they are in Maven Central:
