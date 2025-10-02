@@ -74,6 +74,41 @@ rm -rf ~/.gradle/caches/
 
 其他操作步骤参考英文版的文档即可。其实差异就是切换到 汉化分支：release4.0.0
 
+build
+# Build Azkaban
+./gradlew build
+
+# Clean the build
+./gradlew clean
+
+# Build and install distributions
+./gradlew installDist
+
+# Run tests
+./gradlew test
+
+# Build without running tests
+./gradlew build -x test
+
+运行
+Installing the Solo Server
+Follow these steps to get started:
+
+1. Clone the repo:
+
+git clone https://github.com/azkaban/azkaban.git
+2. Build Azkaban and create an installation package:
+
+cd azkaban; ./gradlew build installDist
+3. Start the solo server:
+
+cd azkaban-solo-server/build/install/azkaban-solo-server; bin/start-solo.sh
+Azkaban solo server should be all set, by listening to 8081 port at default to accept incoming network request. So, open a web browser and check out http://localhost:8081/ . The default login username and password for the solo server are both azkaban which is configured in conf/azkaban-users.xml in the resources folder of the solo server.
+
+4. Stop server:
+
+bin/shutdown-solo.sh
+
 
 
 
